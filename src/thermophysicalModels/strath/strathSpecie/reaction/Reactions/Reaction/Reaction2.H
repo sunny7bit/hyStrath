@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2012 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -43,6 +43,9 @@ SourceFiles
 #include "typeInfo.H"
 #include "runTimeSelectionTables.H"
 
+//#include "EnumString.h" // NEW VINCENT
+//#include <cassert>
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -57,10 +60,10 @@ template<class Reaction2Thermo>
 inline Ostream& operator<<(Ostream&, const Reaction2<Reaction2Thermo>&);
 
 
-enum ControllingTemperatureType {chargeExchange, dissociation, exchange,
-    impactDissociation, impactIonisation, associativeIonisation,
+// NEW VINCENT
+enum ControllingTemperatureType {chargeExchange, dissociation, exchange, 
+    impactDissociation, impactIonisation, associativeIonisation, 
     transrotational, vibrational};
-
 
 /*---------------------------------------------------------------------------*\
                            Class Reaction2 Declaration
@@ -144,9 +147,9 @@ private:
 
         //- Specie info for the right-hand-side of the reaction
         List<specieCoeffs> rhs_;
-
+        
         //- Controlling temperature
-        ControllingTemperatureType controlT_;
+        ControllingTemperatureType controlT_; // NEW VINCENT
 
 
     // Private Member Functions
@@ -260,7 +263,7 @@ public:
         );
 
         //- Construct and return a clone
-        virtual autoPtr<Reaction2<Reaction2Thermo> > clone() const
+        virtual autoPtr<Reaction2<Reaction2Thermo> > clone() const //
         {
             return autoPtr<Reaction2<Reaction2Thermo> >
             (
@@ -315,7 +318,7 @@ public:
             // - Access to basic components of the reaction
             inline const List<specieCoeffs>& lhs() const;
             inline const List<specieCoeffs>& rhs() const;
-
+            
             //- Controlling temperature of the reaction
             inline const ControllingTemperatureType& controlT() const;
 

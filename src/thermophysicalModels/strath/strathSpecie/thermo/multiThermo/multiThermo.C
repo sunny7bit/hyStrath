@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2012 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -28,9 +28,8 @@ License
 
 /* * * * * * * * * * * * * * * private static data * * * * * * * * * * * * * */
 
- // Default OpenFOAM: 1e-4; Rowan Gollan (PhD, 2009) suggests 1.0e-6
 template<class MultiThermo, template<class> class Type>
-const Foam::scalar Foam::species::multiThermo<MultiThermo, Type>::tol_ = 1.0e-4;
+const Foam::scalar Foam::species::multiThermo<MultiThermo, Type>::tol_ = 1.0e-4; // Default OF: 1e-4; Gollan PhD09 suggests 1.0e-6
 
 template<class MultiThermo, template<class> class Type>
 const int Foam::species::multiThermo<MultiThermo, Type>::maxIter_ = 100;

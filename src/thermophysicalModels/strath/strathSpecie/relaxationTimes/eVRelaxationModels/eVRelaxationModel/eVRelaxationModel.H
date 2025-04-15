@@ -2,16 +2,16 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright held by original author
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
-    OpenFOAM is free software: you can redistribute it and/or modify it
-    under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+    OpenFOAM is free software; you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the
+    Free Software Foundation; either version 2 of the License, or (at your
+    option) any later version.
 
     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -19,7 +19,8 @@ License
     for more details.
 
     You should have received a copy of the GNU General Public License
-    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+    along with OpenFOAM; if not, write to the Free Software Foundation,
+    Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
 Namespace
     Foam::eVRelaxationModels
@@ -67,16 +68,16 @@ class eVRelaxationModel
 protected:
 
     // Protected data
-
+    
         //- Two-temperature model dictionary
         const dictionary& dict1_;
-
+        
         //- Thermophysical properties dictionary
         const dictionary& dict2_;
 
         //- Species name
         const word& name1_;
-
+        
         //- Species label associated with the names
         const label& lname1_;
 
@@ -85,13 +86,13 @@ protected:
 
         // Vibrational temperature [K]
         const volScalarField& Tv_;
-
+        
         //- Overwrite the default coefficients for e-V energy transfers
         bool eVOverwriteDefault_;
-
+        
         //- If overwrite is on, are the coefficients species dependent
         bool eVSpeciesDependent_;
-
+        
 
     // Private Member Functions
 
@@ -109,7 +110,7 @@ public:
 
 
     // Declare run-time constructor selection table
-
+    
       declareRunTimeSelectionTable
       (
           autoPtr,
@@ -162,10 +163,10 @@ public:
 
 
     // Member Functions
-
+    
         //- e-V relaxation time [s]
          virtual tmp<volScalarField> taueV() const = 0;
-
+         
         //- e-V relaxation time for patch [s]
         virtual tmp<scalarField> taueV
         (
@@ -173,7 +174,7 @@ public:
             const scalarField& p,
             const scalarField& Tv
         ) const = 0;
-
+       
 };
 
 

@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2012 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -27,7 +27,8 @@ License
 #include "addToRunTimeSelectionTable.H"
 #include "fvPatchFieldMapper.H"
 #include "volFields.H"
-#include "multi2Thermo.H"
+#include "multi2Thermo.H" // NEW VINCENT
+
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -38,8 +39,7 @@ mixed2TREnergyFvPatchScalarField
     const DimensionedField<scalar, volMesh>& iF
 )
 :
-    mixedFvPatchScalarField(p, iF),
-    thermo_(rho2ReactionThermo::lookup2ReactionThermo(*this))
+    mixedFvPatchScalarField(p, iF)
 {
     valueFraction() = 0.0;
     refValue() = 0.0;
@@ -56,8 +56,7 @@ mixed2TREnergyFvPatchScalarField
     const fvPatchFieldMapper& mapper
 )
 :
-    mixedFvPatchScalarField(ptf, p, iF, mapper),
-    thermo_(rho2ReactionThermo::lookup2ReactionThermo(*this))
+    mixedFvPatchScalarField(ptf, p, iF, mapper)
 {}
 
 
@@ -69,8 +68,7 @@ mixed2TREnergyFvPatchScalarField
     const dictionary& dict
 )
 :
-    mixedFvPatchScalarField(p, iF, dict),
-    thermo_(rho2ReactionThermo::lookup2ReactionThermo(*this))
+    mixedFvPatchScalarField(p, iF, dict)
 {}
 
 
@@ -80,8 +78,7 @@ mixed2TREnergyFvPatchScalarField
     const mixed2TREnergyFvPatchScalarField& tppsf
 )
 :
-    mixedFvPatchScalarField(tppsf),
-    thermo_(rho2ReactionThermo::lookup2ReactionThermo(*this))
+    mixedFvPatchScalarField(tppsf)
 {}
 
 
@@ -92,8 +89,7 @@ mixed2TREnergyFvPatchScalarField
     const DimensionedField<scalar, volMesh>& iF
 )
 :
-    mixedFvPatchScalarField(tppsf, iF),
-    thermo_(rho2ReactionThermo::lookup2ReactionThermo(*this))
+    mixedFvPatchScalarField(tppsf, iF)
 {}
 
 
@@ -110,49 +106,22 @@ void Foam::mixed2TREnergyFvPatchScalarField::updateCoeffs()
     const label patchi = patch().index();
 
     const scalarField& pw = multiThermo.p().boundaryField()[patchi];
-    mixedFvPatchScalarField& Tw = refCast<mixedFvPatchScalarField>
+    mixedFvPatchScalarField& Ttw = refCast<mixedFvPatchScalarField>
     (
-        const_cast<fvPatchScalarField&>(multiThermo.T().boundaryField()[patchi])
+        const_cast<fvPatchScalarField&>(multiThermo.Tt().boundaryField()[patchi])
     );
-    Tw.evaluate();
-    
-    tmp<scalarField> thet(new scalarField(pw.size()));
-    tmp<scalarField> thetRef(new scalarField(pw.size()));
-    tmp<scalarField> thetfC(new scalarField(pw.size()));
-    tmp<scalarField> tcvtTw(new scalarField(pw.size()));
-    
-    scalarField& het = thet.ref();
-    scalarField& hetRef = thetRef.ref();
-    scalarField& hetfC = thetfC.ref();
-    scalarField& cvtTw = tcvtTw.ref();
-    
-    het = 0.0;
-    hetRef = 0.0;
-    hetfC = 0.0;
-    cvtTw = 0.0;
 
-    forAll(thermo_.composition().Y(), speciei)
-    {
-        fvPatchScalarField& spYw =
-            const_cast<fvPatchScalarField&>
-            (
-                thermo_.composition().Y(speciei).boundaryField()[patchi]
-            );
-        spYw.evaluate();
+    Ttw.evaluate();
 
-        het += spYw*thermo_.composition().het(speciei, pw, Tw, patchi);
-        hetRef += spYw
-            *thermo_.composition().het(speciei, pw, Tw.refValue(), patchi);
-        hetfC += spYw
-            *thermo_.composition().het(speciei, pw, Tw, patch().faceCells());
-        cvtTw += spYw*thermo_.composition().Cv_t(speciei, pw, Tw, patchi);
-    }
-    
-    cvtTw *= Tw.refGrad();
-    
-    valueFraction() = Tw.valueFraction();
-    refValue() = thetRef;
-    refGrad() = tcvtTw + patch().deltaCoeffs()*(thet - thetfC);
+    valueFraction() = Ttw.valueFraction();
+    refValue() = multiThermo.het(pw, Ttw.refValue(), patchi);
+    refGrad() =
+        multiThermo.Cv_t(pw, Ttw, patchi)*Ttw.refGrad()
+      + patch().deltaCoeffs()*
+        (
+            multiThermo.het(pw, Ttw, patchi)
+          - multiThermo.het(pw, Ttw, patch().faceCells())
+        );
 
     mixedFvPatchScalarField::updateCoeffs();
 }

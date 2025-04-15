@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2013 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -109,28 +109,7 @@ Foam::tmp<Foam::volScalarField> Foam::hTC2Model::Sh() const
 }
 
 
-Foam::tmp<Foam::volScalarField> Foam::hTC2Model::Scv() const
-{
-    return tmp<Foam::volScalarField>
-    (
-        new volScalarField
-        (
-            IOobject
-            (
-                "Scv",
-                mesh_.time().timeName(),
-                mesh_,
-                IOobject::NO_READ,
-                IOobject::NO_WRITE
-            ),
-            mesh_,
-            dimensionedScalar("zero", dimEnergy/dimVolume/dimTime, 0.0)
-        )
-    );
-}
-
-
-Foam::tmp<Foam::volScalarField> Foam::hTC2Model::Scv(const label i) const
+Foam::tmp<Foam::volScalarField> Foam::hTC2Model::Scv(label i) const
 {
     return tmp<Foam::volScalarField>
     (
@@ -151,7 +130,7 @@ Foam::tmp<Foam::volScalarField> Foam::hTC2Model::Scv(const label i) const
 }
 
 
-Foam::tmp<Foam::volScalarField> Foam::hTC2Model::Siir() const
+Foam::tmp<Foam::volScalarField> Foam::hTC2Model::Seiir(label i) const
 {
     return tmp<Foam::volScalarField>
     (
@@ -159,28 +138,7 @@ Foam::tmp<Foam::volScalarField> Foam::hTC2Model::Siir() const
         (
             IOobject
             (
-                "Siir",
-                mesh_.time().timeName(),
-                mesh_,
-                IOobject::NO_READ,
-                IOobject::NO_WRITE
-            ),
-            mesh_,
-            dimensionedScalar("zero", dimEnergy/dimVolume/dimTime, 0.0)
-        )
-    );
-}
-
-
-Foam::tmp<Foam::volScalarField> Foam::hTC2Model::Siir(const label i) const
-{
-    return tmp<Foam::volScalarField>
-    (
-        new volScalarField
-        (
-            IOobject
-            (
-                "Siir_" + word(i),
+                "Seiir_" + word(i),
                 mesh_.time().timeName(),
                 mesh_,
                 IOobject::NO_READ,

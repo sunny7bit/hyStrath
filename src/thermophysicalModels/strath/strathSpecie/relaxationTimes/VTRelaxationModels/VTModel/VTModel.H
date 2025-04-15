@@ -2,16 +2,16 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright held by original author
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
-    OpenFOAM is free software: you can redistribute it and/or modify it
-    under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+    OpenFOAM is free software; you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the
+    Free Software Foundation; either version 2 of the License, or (at your
+    option) any later version.
 
     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -19,13 +19,14 @@ License
     for more details.
 
     You should have received a copy of the GNU General Public License
-    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+    along with OpenFOAM; if not, write to the Free Software Foundation,
+    Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
 Class
     Foam::VTModel
 
 Description
-    V-T relaxation model
+    V-T relaxation model for multispecies binary diffusion coefficients 
 
 SourceFiles
     VTModel.C
@@ -44,7 +45,7 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                          Class VTModel Declaration
+                    Class VTModel Declaration
 \*---------------------------------------------------------------------------*/
 
 class VTModel
@@ -53,39 +54,36 @@ class VTModel
 protected:
 
     // Protected data
-
+    
         //- Two-temperature model dictionary
         const IOdictionary dict2T_;
-
+        
         //- Thermophysical properties dictionary
         const IOdictionary dictThermoPhy_;
 
-        //- List of molecules
-        const wordList& molecules_;
-
-        //- List of species
+        //- Species having a vib. eq. being solved
+        const wordList& solvedVibEqSpecies_;
+        
+        //- Species
         const wordList& species_;
-
+        
         //- Pressure [Pa]
         const volScalarField& p_;
 
-        //- Trans-rotational temperature [K]
-        const volScalarField& T_;
-
-        //- Vibro-electronic temperatures [K]
-        const PtrList<volScalarField>& Tv_;
-
-        //- Species number density [m^-3]
-        const PtrList<volScalarField>& nD_;
-
-        //- V-T relaxation models
-        PtrList<VTRelaxationModel> tauVTijModels_;
-
-        //- Interspecies V-T relaxation time [s]
-        PtrList<volScalarField> tauVTij_;
+        //- Translational temperature [K]
+        const volScalarField& Tt_;
         
-        //- Correction to the V-T relaxation time [s]
-        PtrList<volScalarField> tauVTcorr_;
+        //- Vibrational temperatures [K]
+        const PtrList<volScalarField>& Tv_;
+        
+        //- Number densities [m^-3]
+        const PtrList<volScalarField>& nD_;
+        
+        //- V-T relaxation models 
+        PtrList<VTRelaxationModel> tauVTijModels_;   
+
+        //- Interspecies V-T relaxation time
+        PtrList<volScalarField> tauVTij_;         
 
 
     // Private Member Functions
@@ -109,12 +107,12 @@ public:
         (
             const word& dict2T,
             const word& dictThermoPhy,
-            const wordList& molecules,
+            const wordList& solvedVibEqSpecies,
             const wordList& species,
             const volScalarField& p,
-            const volScalarField& T,
+            const volScalarField& Tt,
             const PtrList<volScalarField>& Tv,
-            const PtrList<volScalarField>& nD
+            const PtrList<volScalarField>& nD 
         );
 
 
@@ -126,30 +124,13 @@ public:
 
     // Member Functions
 
-        //- Return const access to the interspecies V-T relaxation time
         inline const volScalarField& tauVT(label i, label j) const
         {
-            label k = 0;
-            
-            if (i > j)
-            {
-                k = species_.size()*j + i;
-            }
-            else
-            {
-                k = species_.size()*i + j;
-            }
-            
+            label k = solvedVibEqSpecies_.size()*i+j;
             return tauVTij_[k];
         }
-        
-        //- Return const access to the V-T relaxation time correction term
-        inline const volScalarField& tauVTcorr(label moli) const
-        {
-            return tauVTcorr_[moli];
-        }
 
-        //- Update the interspecies V-T relaxation times
+        //- Update the inter-species V-T relaxation times
         virtual void update();
 };
 

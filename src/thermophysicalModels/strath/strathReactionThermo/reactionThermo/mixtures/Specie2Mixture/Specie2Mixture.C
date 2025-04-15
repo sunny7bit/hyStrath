@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2012 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -77,16 +77,6 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::W
 
 
 template<class MixtureType>
-Foam::scalar Foam::Specie2Mixture<MixtureType>::R
-(
-    const label speciei
-) const
-{
-    return this->getLocalThermo(speciei).R();
-}
-
-
-template<class MixtureType>
 Foam::label Foam::Specie2Mixture<MixtureType>::particleType
 (
     const label speciei
@@ -117,8 +107,7 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::diameter
 
 
 template<class MixtureType>
-Foam::DynamicList<Foam::scalar>
-Foam::Specie2Mixture<MixtureType>::vibrationalList
+Foam::DynamicList<Foam::scalar> Foam::Specie2Mixture<MixtureType>::vibrationalList
 (
     const label speciei
 ) const
@@ -147,7 +136,7 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::omega
 }
 
 
-template<class MixtureType>
+template<class MixtureType> // NEW VINCENT 17/02/2016
 Foam::label Foam::Specie2Mixture<MixtureType>::noVibrationalTemp
 (
     const label speciei
@@ -176,7 +165,8 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::iHat
     return this->getLocalThermo(speciei).iHat();
 }
 
-// * * * * * * * * * * * * * Backward compatibility  * * * * * * * * * * * * //
+
+// COMPATIBILITY VINCENT ******************************************************
 template<class MixtureType>
 Foam::scalar Foam::Specie2Mixture<MixtureType>::Cp
 (
@@ -281,19 +271,19 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::A
 {
     return this->getLocalThermo(speciei).A(p, T);
 }
-// * * * * * * * * * * * * End backward compatibility  * * * * * * * * * * * //
+// END COMPATIBILITY VINCENT **************************************************
 
-
+// NEW VINCENT ****************************************************************
 template<class MixtureType>
 Foam::scalar Foam::Specie2Mixture<MixtureType>::Cp
 (
     const label speciei,
     const scalar p,
-    const scalar T,
-    const scalar Tve
+    const scalar Tt,
+    const scalar Tv
 ) const
 {
-    return this->getLocalThermo(speciei).Cp(p, T, Tve);
+    return this->getLocalThermo(speciei).Cp(p, Tt, Tv);
 }
 
 
@@ -302,23 +292,24 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::Cv
 (
     const label speciei,
     const scalar p,
-    const scalar T,
-    const scalar Tve
+    const scalar Tt,
+    const scalar Tv
 ) const
 {
-    return this->getLocalThermo(speciei).Cv(p, T, Tve);
+    return this->getLocalThermo(speciei).Cv(p, Tt, Tv);
 }
 
 
+// NEW VINCENT **********************************************************
 template<class MixtureType>
 Foam::scalar Foam::Specie2Mixture<MixtureType>::Cv_t
 (
     const label speciei,
     const scalar p,
-    const scalar T
+    const scalar Tt
 ) const
 {
-    return this->getLocalThermo(speciei).Cv_t(p, T);
+    return this->getLocalThermo(speciei).Cv_t(p, Tt);
 }
 
 
@@ -327,10 +318,10 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::Cv_v
 (
     const label speciei,
     const scalar p,
-    const scalar Tve
+    const scalar Tv
 ) const
 {
-    return this->getLocalThermo(speciei).Cv_v(p, Tve);
+    return this->getLocalThermo(speciei).Cv_v(p, Tv);
 }
 
 
@@ -339,10 +330,10 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::Cv_el
 (
     const label speciei,
     const scalar p,
-    const scalar Tve
+    const scalar Tv
 ) const
 {
-    return this->getLocalThermo(speciei).Cv_el(p, Tve);
+    return this->getLocalThermo(speciei).Cv_el(p, Tv);
 }
 
 
@@ -351,10 +342,10 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::Cv_vel
 (
     const label speciei,
     const scalar p,
-    const scalar Tve
+    const scalar Tv
 ) const
 {
-    return this->getLocalThermo(speciei).Cv_vel(p, Tve);
+    return this->getLocalThermo(speciei).Cv_vel(p, Tv);
 }
 
 
@@ -363,10 +354,10 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::Cp_t
 (
     const label speciei,
     const scalar p,
-    const scalar T
+    const scalar Tt
 ) const
 {
-    return this->getLocalThermo(speciei).Cp_t(p, T);
+    return this->getLocalThermo(speciei).Cp_t(p, Tt);
 }
 
 
@@ -375,10 +366,10 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::Cp_v
 (
     const label speciei,
     const scalar p,
-    const scalar Tve
+    const scalar Tv
 ) const
 {
-    return this->getLocalThermo(speciei).Cp_v(p, Tve);
+    return this->getLocalThermo(speciei).Cp_v(p, Tv);
 }
 
 
@@ -387,10 +378,10 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::Cp_el
 (
     const label speciei,
     const scalar p,
-    const scalar Tve
+    const scalar Tv
 ) const
 {
-    return this->getLocalThermo(speciei).Cp_el(p, Tve);
+    return this->getLocalThermo(speciei).Cp_el(p, Tv);
 }
 
 
@@ -399,32 +390,23 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::Cp_vel
 (
     const label speciei,
     const scalar p,
-    const scalar Tve
+    const scalar Tv
 ) const
 {
-    const scalar Cvvel = this->getLocalThermo(speciei).Cv_vel(p, Tve);
-    
-    scalar Cpvel = Cvvel;
-    
-    if (this->isElectron(speciei))
-    {
-        Cpvel += R(speciei);
-    }
-    
-    return Cpvel;
+    return this->getLocalThermo(speciei).Cp_vel(p, Tv);
 }
-
+// END BRAND NEW VINCENT ******************************************************
 
 template<class MixtureType>
 Foam::scalar Foam::Specie2Mixture<MixtureType>::Ha
 (
     const label speciei,
     const scalar p,
-    const scalar T,
-    const scalar Tve
+    const scalar Tt,
+    const scalar Tv
 ) const
 {
-    return this->getLocalThermo(speciei).Ha(p, T, Tve);
+    return this->getLocalThermo(speciei).Ha(p, Tt, Tv);
 }
 
 
@@ -433,23 +415,24 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::Hs
 (
     const label speciei,
     const scalar p,
-    const scalar T,
-    const scalar Tve
+    const scalar Tt,
+    const scalar Tv
 ) const
 {
-    return this->getLocalThermo(speciei).Hs(p, T, Tve);
+    return this->getLocalThermo(speciei).Hs(p, Tt, Tv);
 }
 
 
+// BRAND NEW VINCENT **************************************
 template<class MixtureType>
 Foam::scalar Foam::Specie2Mixture<MixtureType>::Hts
 (
     const label speciei,
     const scalar p,
-    const scalar T
+    const scalar Tt
 ) const
 {
-    return this->getLocalThermo(speciei).Hts(p, T);
+    return this->getLocalThermo(speciei).Hts(p, Tt);
 }
 
 
@@ -458,10 +441,10 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::Hvs
 (
     const label speciei,
     const scalar p,
-    const scalar Tve
+    const scalar Tv
 ) const
 {
-    return this->getLocalThermo(speciei).Hvs(p, Tve);
+    return this->getLocalThermo(speciei).Hvs(p, Tv);
 }
 
 
@@ -470,10 +453,10 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::Hels
 (
     const label speciei,
     const scalar p,
-    const scalar Tve
+    const scalar Tv
 ) const
 {
-    return this->getLocalThermo(speciei).Hels(p, Tve);
+    return this->getLocalThermo(speciei).Hels(p, Tv);
 }
 
 
@@ -482,20 +465,12 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::Hvels
 (
     const label speciei,
     const scalar p,
-    const scalar Tve
+    const scalar Tv
 ) const
 {
-    const scalar Evel = this->getLocalThermo(speciei).Evels(p, Tve);
-    
-    scalar Hvel = Evel;
-    
-    if (this->isElectron(speciei))
-    {
-        Hvel += R(speciei)*Tve;
-    }
-    
-    return Hvel;
+    return this->getLocalThermo(speciei).Hvels(p, Tv);
 }
+// END BRAND NEW VINCENT **********************************
 
 
 template<class MixtureType>
@@ -503,11 +478,11 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::S
 (
     const label speciei,
     const scalar p,
-    const scalar T,
-    const scalar Tve
+    const scalar Tt,
+    const scalar Tv
 ) const
 {
-    return this->getLocalThermo(speciei).S(p, T, Tve);
+    return this->getLocalThermo(speciei).S(p, Tt, Tv);
 }
 
 
@@ -516,23 +491,24 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::Es
 (
     const label speciei,
     const scalar p,
-    const scalar T,
-    const scalar Tve
+    const scalar Tt,
+    const scalar Tv
 ) const
 {
-    return this->getLocalThermo(speciei).Es(p, T, Tve);
+    return this->getLocalThermo(speciei).Es(p, Tt, Tv);
 }
 
 
+// BRAND NEW VINCENT **************************************
 template<class MixtureType>
 Foam::scalar Foam::Specie2Mixture<MixtureType>::Ets
 (
     const label speciei,
     const scalar p,
-    const scalar T
+    const scalar Tt
 ) const
 {
-    return this->getLocalThermo(speciei).Ets(p, T);
+    return this->getLocalThermo(speciei).Ets(p, Tt);
 }
 
 
@@ -541,10 +517,10 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::Evs
 (
     const label speciei,
     const scalar p,
-    const scalar Tve
+    const scalar Tv
 ) const
 {
-    return this->getLocalThermo(speciei).Evs(p, Tve);
+    return this->getLocalThermo(speciei).Evs(p, Tv);
 }
 
 
@@ -553,10 +529,10 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::Eels
 (
     const label speciei,
     const scalar p,
-    const scalar Tve
+    const scalar Tv
 ) const
 {
-    return this->getLocalThermo(speciei).Eels(p, Tve);
+    return this->getLocalThermo(speciei).Eels(p, Tv);
 }
 
 
@@ -565,10 +541,10 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::Evels
 (
     const label speciei,
     const scalar p,
-    const scalar Tve
+    const scalar Tv
 ) const
 {
-    return this->getLocalThermo(speciei).Evels(p, Tve);
+    return this->getLocalThermo(speciei).Evels(p, Tv);
 }
 
 
@@ -577,10 +553,10 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::HEt
 (
     const label speciei,
     const scalar p,
-    const scalar T
+    const scalar Tt
 ) const
 {
-    return this->getLocalThermo(speciei).HEt(p, T);
+    return this->getLocalThermo(speciei).HEt(p, Tt);
 }
 
 
@@ -589,10 +565,10 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::HEv
 (
     const label speciei,
     const scalar p,
-    const scalar Tve
+    const scalar Tv
 ) const
 {
-    return this->getLocalThermo(speciei).HEv(p, Tve);
+    return this->getLocalThermo(speciei).HEv(p, Tv);
 }
 
 
@@ -601,10 +577,10 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::HEel
 (
     const label speciei,
     const scalar p,
-    const scalar Tve
+    const scalar Tv
 ) const
 {
-    return this->getLocalThermo(speciei).HEel(p, Tve);
+    return this->getLocalThermo(speciei).HEel(p, Tv);
 }
 
 
@@ -613,62 +589,41 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::HEvel
 (
     const label speciei,
     const scalar p,
-    const scalar Tve
+    const scalar Tv
 ) const
 {
-    return this->getLocalThermo(speciei).HEvel(p, Tve);
+    return this->getLocalThermo(speciei).HEvel(p, Tv);
 }
 
 
-/*template<class MixtureType> TODO ABORTIVE WORK
+/*template<class MixtureType> TODO ONGOING WORK 
 Foam::scalar Foam::Specie2Mixture<MixtureType>::HEvel_mode
 (
     const label speciei,
     const label mode,
     const scalar p,
-    const scalar Tve
+    const scalar Tv
 ) const
 {
-    return this->getLocalThermo(speciei).HEvel_mode(mode, p, Tve);
+    return this->getLocalThermo(speciei).HEvel_mode(mode, p, Tv);
 }*/
 
-
-template<class MixtureType>
-Foam::tmp<Foam::scalarField> Foam::Specie2Mixture<MixtureType>::Cv_t
-(
-    const label speciei,
-    const scalarField& p,
-    const scalarField& T,
-    const label patchi
-) const
-{
-    tmp<scalarField> tCvt(new scalarField(T.size()));
-    scalarField& Cvt = tCvt.ref();
-
-    forAll(T, facei)
-    {
-        Cvt[facei] = Cv_t(speciei, p[facei], T[facei]);
-    }
-
-    return tCvt;
-}
-
-
+// NEW VINCENT 20/02/2016 *****************************************
 template<class MixtureType>
 Foam::tmp<Foam::scalarField> Foam::Specie2Mixture<MixtureType>::Cv_vel
 (
     const label speciei,
     const scalarField& p,
-    const scalarField& Tve,
+    const scalarField& Tv,
     const label patchi
 ) const
 {
-    tmp<scalarField> tCvvel(new scalarField(Tve.size()));
+    tmp<scalarField> tCvvel(new scalarField(Tv.size()));
     scalarField& Cvvel = tCvvel.ref();
 
-    forAll(Tve, facei)
+    forAll(Tv, facei)
     {
-        Cvvel[facei] = Cv_vel(speciei, p[facei], Tve[facei]);
+        Cvvel[facei] = Cv_vel(speciei, p[facei], Tv[facei]);
     }
 
     return tCvvel;
@@ -676,62 +631,20 @@ Foam::tmp<Foam::scalarField> Foam::Specie2Mixture<MixtureType>::Cv_vel
 
 
 template<class MixtureType>
-Foam::tmp<Foam::scalarField> Foam::Specie2Mixture<MixtureType>::het
-(
-    const label speciei,
-    const scalarField& p,
-    const scalarField& T,
-    const labelList& cells
-) const
-{
-    tmp<scalarField> thet(new scalarField(T.size()));
-    scalarField& het = thet.ref();
-
-    forAll(T, celli)
-    {
-        het[celli] = HEt(speciei, p[celli], T[celli]);
-    }
-
-    return thet;
-}
-
-
-template<class MixtureType>
-Foam::tmp<Foam::scalarField> Foam::Specie2Mixture<MixtureType>::het
-(
-    const label speciei,
-    const scalarField& p,
-    const scalarField& T,
-    const label patchi
-) const
-{
-    tmp<scalarField> thet(new scalarField(T.size()));
-    scalarField& het = thet.ref();
-
-    forAll(T, facei)
-    {
-        het[facei] = HEt(speciei, p[facei], T[facei]);
-    }
-
-    return thet;
-}
-
-
-template<class MixtureType>
 Foam::tmp<Foam::scalarField> Foam::Specie2Mixture<MixtureType>::hevel
 (
     const label speciei,
     const scalarField& p,
-    const scalarField& Tve,
+    const scalarField& Tv,
     const labelList& cells
 ) const
 {
-    tmp<scalarField> thevel(new scalarField(Tve.size()));
+    tmp<scalarField> thevel(new scalarField(Tv.size()));
     scalarField& hevel = thevel.ref();
 
-    forAll(Tve, celli)
+    forAll(Tv, celli)
     {
-        hevel[celli] = HEvel(speciei, p[celli], Tve[celli]);
+        hevel[celli] = HEvel(speciei, p[celli], Tv[celli]);
     }
 
     return thevel;
@@ -743,33 +656,76 @@ Foam::tmp<Foam::scalarField> Foam::Specie2Mixture<MixtureType>::hevel
 (
     const label speciei,
     const scalarField& p,
-    const scalarField& Tve,
+    const scalarField& Tv,
     const label patchi
 ) const
 {
-    tmp<scalarField> thevel(new scalarField(Tve.size()));
+    tmp<scalarField> thevel(new scalarField(Tv.size()));
     scalarField& hevel = thevel.ref();
 
-    forAll(Tve, facei)
+    forAll(Tv, facei)
     {
-        hevel[facei] = HEvel(speciei, p[facei], Tve[facei]);
+        hevel[facei] = HEvel(speciei, p[facei], Tv[facei]);
     }
 
     return thevel;
 }
+// END NEW VINCENT 20/02/2016 *************************************************
 
 
+// NEW VINCENT 03/03/2016 *****************************************************
 template<class MixtureType>
 Foam::scalar Foam::Specie2Mixture<MixtureType>::TtHEt
 (
     const label speciei,
     const scalar het,
     const scalar p,
-    const scalar T
+    const scalar Tt
 ) const
 {
-    return this->getLocalThermo(speciei).TtHEt(het, p, T);
+    return this->getLocalThermo(speciei).TtHEt(het, p, Tt);
 }
+// END NEW VINCENT 03/03/2016 *************************************************
+
+
+template<class MixtureType>
+Foam::scalar Foam::Specie2Mixture<MixtureType>::TvHEv
+(
+    const label speciei,
+    const scalar hev,
+    const scalar p,
+    const scalar Tv
+) const
+{
+    return this->getLocalThermo(speciei).TvHEv(hev, p, Tv);
+}
+
+
+template<class MixtureType>
+Foam::scalar Foam::Specie2Mixture<MixtureType>::TvelHEvel
+(
+    const label speciei,
+    const scalar hevel,
+    const scalar p,
+    const scalar Tvel
+) const
+{
+    return this->getLocalThermo(speciei).TvelHEvel(hevel, p, Tvel);
+}
+
+
+/*template<class MixtureType> TODO ONGOING WORK 
+Foam::scalar Foam::Specie2Mixture<MixtureType>::TvelHEvel_mode
+(
+    const label speciei,
+    const label mode,
+    const scalar hevel,
+    const scalar p,
+    const scalar Tvel
+) const
+{
+    return this->getLocalThermo(speciei).TvelHEvel_mode(mode, hevel, p, Tvel);
+}*/
 
 
 template<class MixtureType>
@@ -777,11 +733,11 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::zetar
 (
     const label speciei,
     const scalar p,
-    const scalar T,
-    const scalar Tve
+    const scalar Tt,
+    const scalar Tv
 ) const
 {
-    return this->getLocalThermo(speciei).zetar(p, T, Tve);
+    return this->getLocalThermo(speciei).zetar(p, Tt, Tv);
 }
 
 
@@ -790,23 +746,23 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::zetav
 (
     const label speciei,
     const scalar p,
-    const scalar Tve
+    const scalar Tv
 ) const
 {
-    return this->getLocalThermo(speciei).zetav(p, Tve);
+    return this->getLocalThermo(speciei).zetav(p, Tv);
 }
 
 
-/*template<class MixtureType> TODO ABORTIVE WORK
+/*template<class MixtureType> TODO ONGOING WORK 
 Foam::scalar Foam::Specie2Mixture<MixtureType>::zetav_mode
 (
     const label speciei,
     const label mode,
     const scalar p,
-    const scalar Tve
+    const scalar Tv
 ) const
 {
-    return this->getLocalThermo(speciei).zetav_mode(mode, p, Tve);
+    return this->getLocalThermo(speciei).zetav_mode(mode, p, Tv);
 }*/
 
 
@@ -815,11 +771,12 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::zetael
 (
     const label speciei,
     const scalar p,
-    const scalar Tve
+    const scalar Tv
 ) const
 {
-    return this->getLocalThermo(speciei).zetael(p, Tve);
+    return this->getLocalThermo(speciei).zetael(p, Tv);
 }
+// END BRAND NEW VINCENT **********************************
 
 
 template<class MixtureType>
@@ -827,11 +784,11 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::G
 (
     const label speciei,
     const scalar p,
-    const scalar T,
-    const scalar Tve
+    const scalar Tt,
+    const scalar Tv
 ) const
 {
-    return this->getLocalThermo(speciei).G(p, T, Tve);
+    return this->getLocalThermo(speciei).G(p, Tt, Tv);
 }
 
 
@@ -840,16 +797,17 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::A
 (
     const label speciei,
     const scalar p,
-    const scalar T,
-    const scalar Tve
+    const scalar Tt,
+    const scalar Tv
 ) const
 {
-    return this->getLocalThermo(speciei).A(p, T, Tve);
+    return this->getLocalThermo(speciei).A(p, Tt, Tv);
 }
+// END NEW VINCENT ************************************************************
 
 
 template<class MixtureType>
-Foam::scalar Foam::Specie2Mixture<MixtureType>::psi
+Foam::scalar Foam::Specie2Mixture<MixtureType>::psi // NEW VINCENT 14/02/2016
 (
     const label speciei,
     const scalar p,
@@ -877,10 +835,10 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::kappatr
 (
     const label speciei,
     const scalar p,
-    const scalar T
+    const scalar Tt
 ) const
 {
-    return this->getLocalThermo(speciei).kappatr(p, T);
+    return this->getLocalThermo(speciei).kappatr(p, Tt);
 }
 
 
@@ -889,26 +847,11 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::kappave
 (
     const label speciei,
     const scalar p,
-    const scalar T,
+    const scalar Tt,
     const scalar Tve
 ) const
 {
-    return this->getLocalThermo(speciei).kappave(p, T, Tve);
-}
-
-
-template<class MixtureType>
-Foam::scalar Foam::Specie2Mixture<MixtureType>::kappa
-(
-    const label speciei,
-    const scalar p,
-    const scalar T,
-    const scalar Tve
-) const
-{
-    return
-        this->getLocalThermo(speciei).kappatr(p, T)
-      + this->getLocalThermo(speciei).kappave(p, T, Tve);
+    return this->getLocalThermo(speciei).kappave(p, Tt, Tve);
 }
 
 
@@ -917,42 +860,34 @@ Foam::scalar Foam::Specie2Mixture<MixtureType>::alphatr
 (
     const label speciei,
     const scalar p,
-    const scalar T
+    const scalar Tt
 ) const
 {
-    const scalar Cptr = max(this->getLocalThermo(speciei).Cp_t(p, T), 1e-12);
-    
-    return this->getLocalThermo(speciei).kappatr(p, T)/Cptr;
+    return this->getLocalThermo(speciei).alphatr(p, Tt);
 }
-
 
 template<class MixtureType>
 Foam::scalar Foam::Specie2Mixture<MixtureType>::alphave
 (
     const label speciei,
     const scalar p,
-    const scalar T,
+    const scalar Tt,
     const scalar Tve
 ) const
 {
-    const scalar loc_Cpvel = max(Cp_vel(speciei, p, Tve), 1e-12);
-    
-    return this->getLocalThermo(speciei).kappave(p, T, Tve)/loc_Cpvel;
+    return this->getLocalThermo(speciei).alphave(p, Tt, Tve);
 }
 
 
 template<class MixtureType>
-Foam::scalar Foam::Specie2Mixture<MixtureType>::alpha
+Foam::scalar Foam::Specie2Mixture<MixtureType>::rho
 (
     const label speciei,
     const scalar p,
-    const scalar T,
-    const scalar Tve
+    const scalar T
 ) const
 {
-    const scalar loc_Cp = max(Cp(speciei, p, T, Tve), 1e-12);
-    
-    return kappa(speciei, p, T, Tve)/loc_Cp;
+    return this->getLocalThermo(speciei).rho(p, T);
 }
 
 

@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2013 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -52,7 +52,8 @@ void Foam::no2ChemistrySolver<Chemistry2Model>::solve
 (
     scalarField&,
     scalar&,
-    scalarList&,
+    scalar&, // NEW VINCENT
+    List<scalar>&,  // NEW VINCENT
     scalar&,
     scalar&,
     scalar&
@@ -64,39 +65,11 @@ void Foam::no2ChemistrySolver<Chemistry2Model>::solve
 (
     scalarField&,
     scalarField&,
+    scalarField&, // NEW VINCENT
+    scalarField&, // NEW VINCENT
     scalar&,
-    scalarList&,
-    scalar&,
-    scalar&,
-    scalar&
-) const
-{}
-
-
-template<class Chemistry2Model>
-void Foam::no2ChemistrySolver<Chemistry2Model>::solve
-(
-    scalarField&,
-    scalarField&,
-    labelList&,
-    scalar&,
-    scalarList&,
-    scalar&,
-    scalar&,
-    scalar&
-) const
-{}
-
-
-template<class Chemistry2Model>
-void Foam::no2ChemistrySolver<Chemistry2Model>::solve
-(
-    scalarField&,
-    scalarField&,
-    scalarField&,
-    labelList&,
-    scalar&,
-    scalarList&,
+    scalar&, // NEW VINCENT
+    List<scalar>&,  // NEW VINCENT
     scalar&,
     scalar&,
     scalar&

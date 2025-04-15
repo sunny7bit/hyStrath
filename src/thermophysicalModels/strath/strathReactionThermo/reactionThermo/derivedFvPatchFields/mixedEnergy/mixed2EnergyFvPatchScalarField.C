@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2012 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ License
 #include "addToRunTimeSelectionTable.H"
 #include "fvPatchFieldMapper.H"
 #include "volFields.H"
-#include "multi2Thermo.H"
+#include "multi2Thermo.H" // NEW VINCENT
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -111,57 +111,51 @@ void Foam::mixed2EnergyFvPatchScalarField::updateCoeffs()
 
     const scalarField& pw = multiThermo.p().boundaryField()[patchi];
 
-    mixedFvPatchScalarField& Tw = refCast<mixedFvPatchScalarField>
-    (
-        const_cast<fvPatchScalarField&>(multiThermo.T().boundaryField()[patchi])
+    mixedFvPatchScalarField& Ttw = refCast<mixedFvPatchScalarField>
+    (  
+        const_cast<fvPatchScalarField&>(multiThermo.Tt().boundaryField()[patchi])
     );
-    Tw.evaluate();
-
-    tmp<scalarField> thevel(new scalarField(pw.size()));
-    tmp<scalarField> thevelRef(new scalarField(pw.size()));
-    tmp<scalarField> thevelfC(new scalarField(pw.size()));
-    tmp<scalarField> tCvvelTvw(new scalarField(pw.size()));
-    
-    scalarField& hevel = thevel.ref();
-    scalarField& hevelRef = thevelRef.ref();
-    scalarField& hevelfC = thevelfC.ref();
-    scalarField& cvvelTvw = tCvvelTvw.ref();
-    
+    Ttw.evaluate();
+  
+    tmp<Field<scalar> > thevel(new Field<scalar>(pw.size()));
+    Field<scalar>& hevel = thevel.ref();
     hevel = 0.0;
+    
+    tmp<Field<scalar> > thevelRef(new Field<scalar>(pw.size()));
+    Field<scalar>& hevelRef = thevelRef.ref();
     hevelRef = 0.0;
+
+    tmp<Field<scalar> > thevelfC(new Field<scalar>(pw.size()));
+    Field<scalar>& hevelfC = thevelfC.ref();
     hevelfC = 0.0;
+    
+    tmp<Field<scalar> > tCvvelTvw(new Field<scalar>(pw.size()));
+    Field<scalar>& cvvelTvw = tCvvelTvw.ref();
     cvvelTvw = 0.0;
 
-    forAll(thermo_.composition().Y(), speciei)
+    for(label speciei=0 ; speciei<thermo_.composition().Y().size() ; speciei++)
     {
-        const fvPatchScalarField& spYw =
-            thermo_.composition().Y(speciei).boundaryField()[patchi];
-
-        hevel += spYw*thermo_.composition().hevel(speciei, pw, Tw, patchi);
-        hevelRef +=
-            spYw
-          * thermo_.composition().hevel(speciei, pw, Tw.refValue(), patchi);
-        hevelfC +=
-            spYw
-          * thermo_.composition().hevel
-            (
-                speciei,
-                pw,
-                Tw,
-                patch().faceCells()
-            );
-        cvvelTvw += spYw*thermo_.composition().Cv_vel(speciei, pw, Tw, patchi);
+        fvPatchScalarField& spYw =
+            const_cast<fvPatchScalarField&>(thermo_.composition().Y(speciei).boundaryField()[patchi]);
+        spYw.evaluate();
+        
+        mixedFvPatchScalarField& spTvw = refCast<mixedFvPatchScalarField>
+            (const_cast<fvPatchScalarField&>(thermo_.composition().Tv(speciei).boundaryField()[patchi]));
+        spTvw.evaluate();
+        
+        hevel += spYw*thermo_.composition().hevel(speciei, pw, spTvw, patchi);
+        hevelRef += spYw*thermo_.composition().hevel(speciei, pw, spTvw.refValue(), patchi);
+        hevelfC += spYw*thermo_.composition().hevel(speciei, pw, spTvw, patch().faceCells());
+        cvvelTvw += spYw*thermo_.composition().Cv_vel(speciei, pw, spTvw, patchi)*spTvw.refGrad();
     }
-    
-    cvvelTvw *= Tw.refGrad();
 
-    valueFraction() = Tw.valueFraction();
-    refValue() = multiThermo.het(pw, Tw.refValue(), patchi) + thevelRef;
-    refGrad() = multiThermo.Cv_t(pw, Tw, patchi)*Tw.refGrad() + tCvvelTvw
+    valueFraction() = Ttw.valueFraction();
+    refValue() = multiThermo.het(pw, Ttw.refValue(), patchi) + thevelRef;
+    refGrad() = multiThermo.Cv_t(pw, Ttw, patchi)*Ttw.refGrad() + tCvvelTvw
         + patch().deltaCoeffs()*
           (
-              multiThermo.het(pw, Tw, patchi) + thevel
-            - multiThermo.het(pw, Tw, patch().faceCells()) - thevelfC
+              multiThermo.het(pw, Ttw, patchi) + thevel
+            - multiThermo.het(pw, Ttw, patch().faceCells()) - thevelfC
           );
 
     mixedFvPatchScalarField::updateCoeffs();

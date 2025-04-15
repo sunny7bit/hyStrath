@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2012 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -77,16 +77,13 @@ class multi2ComponentMixture
         //- Correct the mass fractions to sum to 1
         void correctMassFractions();
         
-        //- Fill species tables and lists (for molecules, atoms, ions, etc)
-        void fillSpeciesTablesAndLists(const label i);
-
         //- Correct the associativity vibrational temperature table
         void correctVibTempAssociativity(const dictionary& dict);
-
+        
         //- Fills the solvedVibEqSpecies table from the list of species and the
         //  vibTempAssociativity list
         void fillSolvedVibEqSpeciesTable();
-
+        
         //- Fills a modified solvedVibEqSpecies table from the list of species
         //  that will later serves in the code
         void fillHackOfSolvedVibEqSpeciesTable();
@@ -124,22 +121,225 @@ public:
     // Member functions
 
         const ThermoType& cellMixture(const label celli) const;
-
+        
         const ThermoType& patchFaceMixture
         (
             const label patchi,
             const label facei
         ) const;
-
+        
+        // NEW VINCENT 07/08/2016 *********************************************
+        scalar cellMixture_HEt
+        (
+            const label celli, 
+            const scalar p, 
+            const scalar Tt
+        ) const;
+        
+        scalar cellMixture_HEv
+        (
+            const label celli, 
+            const scalar p, 
+            const scalar Tv
+        ) const;
+        
+        scalar cellMixture_HEel
+        (
+            const label celli, 
+            const scalar p, 
+            const scalar Tv
+        ) const;
+        
+        scalar cellMixture_HEvel
+        (
+            const label celli, 
+            const scalar p, 
+            const scalar Tv
+        ) const;
+        
+        scalar cellMixture_Cv_t
+        (
+            const label celli, 
+            const scalar p, 
+            const scalar Tt
+        ) const; 
+        
+        scalar cellMixture_Cv_vel
+        (
+            const label celli, 
+            const scalar p, 
+            const scalar Tv
+        ) const;
+        
+        scalar cellMixture_Cp_t
+        (
+            const label celli, 
+            const scalar p, 
+            const scalar Tt
+        ) const;
+        
+        scalar cellMixture_Cp_vel
+        (
+            const label celli, 
+            const scalar p, 
+            const scalar Tv
+        ) const;
+        
+        scalar cellMixture_gamma
+        (
+            const label celli, 
+            const scalar p, 
+            const scalar Tt,
+            const scalar Tv
+        ) const;
+        
+        scalar cellMixture_kappa_tr
+        (
+            const label celli, 
+            const scalar p, 
+            const scalar Tt
+        ) const;
+        
+        scalar cellMixture_kappa_ve
+        (
+            const label celli, 
+            const scalar p, 
+            const scalar Tt,
+            const scalar Tv
+        ) const;
+        
+        scalar cellMixture_alpha_tr
+        (
+            const label celli, 
+            const scalar p, 
+            const scalar Tt
+        ) const;
+        
+        scalar cellMixture_alpha_ve
+        (
+            const label celli, 
+            const scalar p, 
+            const scalar Tt,
+            const scalar Tv
+        ) const;
+        
+        scalar patchFaceMixture_HEt
+        (
+            const label patchi,
+            const label facei,
+            const scalar p, 
+            const scalar Tt
+        ) const;
+        
+        scalar patchFaceMixture_HEv
+        (
+            const label patchi,
+            const label facei,
+            const scalar p, 
+            const scalar Tv
+        ) const;
+        
+        scalar patchFaceMixture_HEel
+        (
+            const label patchi,
+            const label facei,
+            const scalar p, 
+            const scalar Tv
+        ) const;
+        
+        scalar patchFaceMixture_HEvel
+        (
+            const label patchi,
+            const label facei,
+            const scalar p, 
+            const scalar Tv
+        ) const;
+        
+        scalar patchFaceMixture_Cv_t
+        (
+            const label patchi,
+            const label facei,
+            const scalar p, 
+            const scalar Tt
+        ) const;
+        
+        scalar patchFaceMixture_Cv_vel
+        (
+            const label patchi,
+            const label facei,
+            const scalar p, 
+            const scalar Tv
+        ) const;
+        
+        scalar patchFaceMixture_Cp_t
+        (
+            const label patchi,
+            const label facei,
+            const scalar p, 
+            const scalar Tt
+        ) const;
+        
+        scalar patchFaceMixture_Cp_vel
+        (
+            const label patchi,
+            const label facei,
+            const scalar p, 
+            const scalar Tv
+        ) const;
+        
+        scalar patchFaceMixture_gamma
+        (
+            const label patchi,
+            const label facei,
+            const scalar p, 
+            const scalar Tt,
+            const scalar Tv
+        ) const;
+        
+        scalar patchFaceMixture_kappa_tr
+        (
+            const label patchi,
+            const label facei,
+            const scalar p, 
+            const scalar Tt
+        ) const;
+        
+        scalar patchFaceMixture_kappa_ve
+        (
+            const label patchi,
+            const label facei,
+            const scalar p, 
+            const scalar Tt,
+            const scalar Tv
+        ) const;
+        
+        scalar patchFaceMixture_alpha_tr
+        (
+            const label patchi,
+            const label facei,
+            const scalar p, 
+            const scalar Tt
+        ) const;
+        
+        scalar patchFaceMixture_alpha_ve
+        (
+            const label patchi,
+            const label facei,
+            const scalar p, 
+            const scalar Tt,
+            const scalar Tv
+        ) const;
+        
         //- Attempt to return the value of any function F for patch (not used)
         scalar patchFaceMixture
         (
             scalar (ThermoType::*F)(const scalar, const scalar) const,
             const label patchi,
             const label facei,
-            const scalar p,
+            const scalar p, 
             const scalar T
         ) const;
+        // END NEW VINCENT 07/08/2016 *****************************************
 
         const ThermoType& cellVolMixture
         (
@@ -155,80 +355,46 @@ public:
             const label patchi,
             const label facei
         ) const;
-
+        
         //- Mixture molecular weight for cell-set [g/mol]
-        virtual scalar molWeightMixture
-        (
-            const label celli,
-            const bool fromMolarFrac = false
-        ) const;
-
-        //- Mixture molecular weight for patch [g/mol]
-        virtual scalar molWeightMixture
-        (
-            const label patchi,
-            const label facei,
-            const bool fromMolarFrac = false
-        ) const;
+        virtual scalar molWeightMixture(const label posi) const; // NEW VINCENT 04/03/2016
         
         //- Mixture molecular weight [g/mol]
-        virtual tmp<volScalarField> molWeightMixture() const;
-
+        virtual tmp<volScalarField> molWeightMixture() const; // NEW VINCENT 11/11/2016
+        
+        //- Mixture molecular weight for patch [kg/mol]
+        virtual scalar molWeightMixture(const label patchi, const label facei) const; // NEW VINCENT 04/03/2016
+        
         //- Mixture specific gas constant for cell-set [J/kg/K]
-        virtual scalar RspecificMixture(const label celli) const;
-
+        virtual scalar RspecificMixture(const label celli) const; // NEW VINCENT 18/04/2016
+        
         //- Mixture specific gas constant for cell-set for patch [J/kg/K]
-        virtual scalar RspecificMixture
-        (
-            const label patchi,
-            const label facei
-        ) const;
-
+        virtual scalar RspecificMixture(const label patchi, const label facei) const; // NEW VINCENT 18/04/2016
+        
         //- Update values of molar-fractions from mass-fractions for cell-set
-        virtual scalar molarFraction
-        (
-            const label speciei,
-            const scalar Yi,
-            const label celli
-        );
-
+        virtual scalar molarFraction(const label speciei, const scalar Yi, const label celli);
+        
         //- Update values of molar-fractions from mass-fractions for patch
-        virtual scalar molarFraction
-        (
-            const label speciei,
-            const scalar Yi,
-            const label patchi,
-            const label facei
-        );
-
-        //- Update values of mass-fractions from molar-fractions during the
-        //  initialisation
-        virtual scalar massFractionFromMolarFraction
-        (
-            const label speciei,
-            const scalar Xi,
-            const scalar Wmix
-        );
-
+        virtual scalar molarFraction(const label speciei, const scalar Yi, const label patchi, const label facei);
+        
+        //- Update values of mass-fractions from molar-fractions during the initialisation
+        virtual scalar massFractionFromMolarFraction(const label speciei, /*const scalar celli,*/ const scalar Xi);
+        
+        //- Update values of mass-fractions from partial densities
+        virtual scalar massFractionFromPartialDensity(const scalar rhoi, const scalar p, const scalar Tt);
+        
         //- Update values of number densities from mass fractions
-        virtual scalar numberDensity
-        (
-            const label speciei,
-            const scalar Yi,
-            const scalar rho
-        );
-
+        virtual scalar numberDensity(const label speciei, const scalar Yi, const scalar rho);
+        
+        //- Update values of partial pressures from molar fractions
+        virtual scalar partialPressure(const scalar Xi, const scalar p);
+        
         //- Update values of partial pressures from the equation of state
-        virtual scalar partialPressureEoS
-        (
-            const label speciei,
-            const scalar rhoi,
-            const scalar Ti
-        );
-
+        virtual scalar partialPressureEoS(const label speciei, const scalar rhoi, const scalar Ti);
+        
         //- Update values of partial densities from mass fractions
         virtual scalar partialDensity(const scalar Yi, const scalar rho);
-
+        
         //- Return the raw specie thermodynamic data
         const PtrList<ThermoType>& speciesData() const
         {

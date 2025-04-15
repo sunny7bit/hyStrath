@@ -1,10 +1,10 @@
 
-// Write the fields needed for the re-initialisation
+// Write the fields needed for the re-initialisation 
 // of the thermo package in runTimeEditing/hTCPropertiesDictModification.H
 
 p.write();
 U.write();
-thermo.T().write();
+thermo.Tt().write();
 
 forAll(Y, speciei)
 {

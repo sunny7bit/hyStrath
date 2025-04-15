@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -35,10 +35,12 @@ Foam::chemistry2Reader<ThermoType>::New
     speciesTable& species
 )
 {
+    // DELETION VINCENT *******************************************************
     // Let the chemistry reader type default to CHEMKIN
     // for backward compatibility
     //word chemistry2ReaderTypeName("chemkinReader");
-    word chemistry2ReaderTypeName("foam2ChemistryReader");
+    // END DELETION VINCENT ***************************************************
+    word chemistry2ReaderTypeName("foam2ChemistryReader"); // NEW VINCENT
 
     // otherwise use the specified reader
     thermoDict.readIfPresent("chemistry2Reader", chemistry2ReaderTypeName);

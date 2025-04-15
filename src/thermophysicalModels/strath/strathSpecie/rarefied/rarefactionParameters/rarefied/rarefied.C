@@ -2,16 +2,16 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright held by original author
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
-    OpenFOAM is free software: you can redistribute it and/or modify it
-    under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+    OpenFOAM is free software; you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the
+    Free Software Foundation; either version 2 of the License, or (at your
+    option) any later version.
 
     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -19,7 +19,8 @@ License
     for more details.
 
     You should have received a copy of the GNU General Public License
-    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+    along with OpenFOAM; if not, write to the Free Software Foundation,
+    Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
 \*---------------------------------------------------------------------------*/
 
@@ -30,9 +31,9 @@ License
 
 template<class ThermoType>
 void Foam::rarefied<ThermoType>::updateCoefficients()
-{
+{     
     mfpModel_().update();
-}
+} 
 
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
@@ -45,13 +46,13 @@ Foam::rarefied<ThermoType>::rarefied
 )
 :
     rarefactionParameter(thermo, turbulence),
-
+    
     speciesThermo_
     (
         dynamic_cast<const multi2ComponentMixture<ThermoType>&>
             (this->thermo_).speciesData()
     ),
-
+    
     miniXs_(1e-4)
 {}
 
@@ -63,9 +64,9 @@ void Foam::rarefied<ThermoType>::correct(const volVectorField& U)
 {
     if(computeRarefaction_)
     {
-        updateCoefficients();
+        updateCoefficients(); 
 
-        const volScalarField& T = thermo_.T();
+        const volScalarField& T = thermo_.Tt();
         const volScalarField& Tv = thermo_.Tv();
         const volScalarField magU (mag(U));
         volScalarField c(sqrt(thermo_.Cp_t()/thermo_.Cv_t()/thermo_.psi()));
@@ -81,13 +82,13 @@ void Foam::rarefied<ThermoType>::correct(const volVectorField& U)
         const scalarField& cCells = c.internalField();
         const scalarField& rhoCells = rho.internalField();
         const scalarField& muMixCells = muMix.internalField();
-
+        
         scalarField& mfpMixCells = mfpMix_.primitiveFieldRef();
-        volScalarField innerSum = mfpMix_, outerSum = mfpMix_;
-        volScalarField nDmix = thermo_.composition().nD()[0];
+        volScalarField innerSum = mfpMix_, outerSum = mfpMix_; // NEW VINCENT 03/08/2016
+        volScalarField nDmix = thermo_.composition().nD()[0]; // NEW VINCENT 03/08/2016
 
         volScalarField tMfpMix = mfpMix_;
-
+        
         //- Initialisation
         forAll(rhoCells, celli)
         {
@@ -96,7 +97,7 @@ void Foam::rarefied<ThermoType>::correct(const volVectorField& U)
             nDmix[celli] = 0.0;
             tMfpMix[celli] = 0.0;
         }
-
+        
         forAll(rho.boundaryField(), patchi)
         {
             forAll(rho.boundaryField()[patchi], facei)
@@ -109,23 +110,21 @@ void Foam::rarefied<ThermoType>::correct(const volVectorField& U)
         }
 
         forAll(species(), speciei)
-        {
+        {  
             const volScalarField& X = thermo_.composition().X()[speciei];
             const volScalarField& pD = thermo_.composition().pD()[speciei];
-            // NOTE VINCENT: non-constant declaration because it has to be
-            // multiplied by mu_i/rho_i
-            volScalarField& mfp = mfpModel_().mfp(speciei); 
-
+            volScalarField& mfp = mfpModel_().mfp(speciei); // NOTE VINCENT: non-constant declaration because it has to be multiplied by mu_i/rho_i
+            
             const scalarField& XCells = X.internalField();
             const scalarField& pDCells = pD.internalField();
 
             scalarField& mfpCells = mfp.primitiveFieldRef();
-
-            if(oldMfpDefinition_)
+            
+            if(oldMfpDefinition_) // NEW VINCENT 03/08/2016
             {
                 tMfpMix += X*mfp;
             }
-
+            
             forAll(rhoCells, celli)
             {
                 if(XCells[celli] > miniXs_)
@@ -145,7 +144,7 @@ void Foam::rarefied<ThermoType>::correct(const volVectorField& U)
                 const fvPatchScalarField& pp = p.boundaryField()[patchi];
                 const fvPatchScalarField& pT = T.boundaryField()[patchi];
                 fvPatchScalarField& pmfp = mfp.boundaryFieldRef()[patchi];
-
+                
                 forAll(pp, facei)
                 {
                     if(pX[facei] > miniXs_)
@@ -158,19 +157,19 @@ void Foam::rarefied<ThermoType>::correct(const volVectorField& U)
                     }
                 }
             }
-
-
-            if(not oldMfpDefinition_ /*and species().size() > 1*/)
+            
+            
+            if(not oldMfpDefinition_ /*and species().size() > 1*/) // NEW VINCENT 03/08/2016
             {
                 const volScalarField& nDi = thermo_.composition().nD()[speciei];
                 const scalarField& nDiCells = nDi.internalField();
-
+                
                 //- Initialisation
                 forAll(rhoCells, celli)
                 {
                     innerSum[celli] = 0.0;
                 }
-
+                
                 forAll(rho.boundaryField(), patchi)
                 {
                     forAll(rho.boundaryField()[patchi], facei)
@@ -178,52 +177,52 @@ void Foam::rarefied<ThermoType>::correct(const volVectorField& U)
                         innerSum.boundaryFieldRef()[patchi][facei] = 0.0;
                     }
                 }
-
+                
                 //- Calculation
                 forAll(species(), speciej)
                 {
                     const volScalarField& nDj = thermo_.composition().nD()[speciej];
                     const scalarField& nDjCells = nDj.internalField();
-
+                    
                     forAll(T, celli)
                     {
                         innerSum[celli] += max(nDjCells[celli]*innerQuantity(speciei, speciej, TCells[celli]), Foam::VSMALL);
                     }
-
+                    
                     forAll(T.boundaryField(), patchi)
                     {
                         const fvPatchScalarField& pT = T.boundaryField()[patchi];
                         const fvPatchScalarField& pnDj = nDj.boundaryField()[patchi];
-                        fvPatchScalarField& pInnerSum = innerSum.boundaryFieldRef()[patchi];
-
+                        fvPatchScalarField& pInnerSum = innerSum.boundaryFieldRef()[patchi]; 
+                        
                         forAll(pT, facei)
                         {
                             pInnerSum[facei] += max(pnDj[facei]*innerQuantity(speciei, speciej, pT[facei]), Foam::VSMALL);
                         }
                     }
                 }// end speciej loop
-
+                
                 forAll(T, celli)
                 {
                     outerSum[celli] += nDiCells[celli]/innerSum[celli];
                 }
-
+                
                 forAll(nDi.boundaryField(), patchi)
                 {
-                    const fvPatchScalarField& pnDi = nDi.boundaryField()[patchi];
+                    const fvPatchScalarField& pnDi = nDi.boundaryField()[patchi]; 
                     const fvPatchScalarField& pInnerSum = innerSum.boundaryField()[patchi];
-                    fvPatchScalarField& pOuterSum = outerSum.boundaryFieldRef()[patchi];
-
+                    fvPatchScalarField& pOuterSum = outerSum.boundaryFieldRef()[patchi];  
+                    
                     forAll(pnDi, facei)
                     {
                         pOuterSum[facei] += pnDi[facei]/pInnerSum[facei];
                     }
                 }
-
+                
                 nDmix += nDi;
             }
         }
-
+        
         const scalarField& tMfpMixCells = tMfpMix.internalField();
         scalarField& KnovCells = Knov_.primitiveFieldRef();
         scalarField& KnGLLCells = KnGLL_.primitiveFieldRef();
@@ -233,7 +232,7 @@ void Foam::rarefied<ThermoType>::correct(const volVectorField& U)
 
         const volScalarField gradRho = mag(fvc::grad(thermo_.rho()));
         const scalarField& gradRhoCells = gradRho.internalField();
-        const volScalarField gradT = mag(fvc::grad(thermo_.T()));
+        const volScalarField gradT = mag(fvc::grad(thermo_.Tt()));
         const volScalarField gradTv = mag(fvc::grad(thermo_.Tv()));
         const scalarField& gradTCells = gradT.internalField();
         const scalarField& gradTvCells = gradTv.internalField();
@@ -242,7 +241,7 @@ void Foam::rarefied<ThermoType>::correct(const volVectorField& U)
 
         forAll(rhoCells, celli)
         {
-            if(oldMfpDefinition_)
+            if(oldMfpDefinition_) // NEW VINCENT 03/08/2016
             {
                 mfpMixCells[celli] = tMfpMixCells[celli]*muMixCells[celli]/rhoCells[celli];
             }
@@ -254,7 +253,7 @@ void Foam::rarefied<ThermoType>::correct(const volVectorField& U)
             {
                 mfpMixCells[celli] = mfpModel_().mfp(0)[celli];
             }*/
-
+            
             KnGLLCellsRho[celli] = mfpMixCells[celli]/rhoCells[celli]*gradRhoCells[celli];
             KnGLLCellsU[celli] = mfpMixCells[celli]/max(max(cCells[celli], UCells[celli]), Foam::SMALL)*gradUCells[celli]; // NOTE VINCENT: to be able to run heat baths
             KnovCells[celli] = mfpMixCells[celli]/characteristicLength_;
@@ -281,19 +280,19 @@ void Foam::rarefied<ThermoType>::correct(const volVectorField& U)
         {
             const fvPatchScalarField& pmuMix = muMix.boundaryField()[patchi];
             const fvPatchScalarField& ptMfpMix = tMfpMix.boundaryField()[patchi];
-            const fvPatchScalarField& prho = rho.boundaryField()[patchi];
-            const fvPatchScalarField& pT = T.boundaryField()[patchi];
-            const fvPatchScalarField& pTv = Tv.boundaryField()[patchi];
+            const fvPatchScalarField& prho = rho.boundaryField()[patchi]; 
+            const fvPatchScalarField& pT = T.boundaryField()[patchi]; 
+            const fvPatchScalarField& pTv = Tv.boundaryField()[patchi]; 
             const fvPatchScalarField& pU = magU.boundaryField()[patchi];
             const fvPatchScalarField& pc = c.boundaryField()[patchi];
             const fvPatchScalarField& pgradRho = gradRho.boundaryField()[patchi];
             const fvPatchScalarField& pgradT = gradT.boundaryField()[patchi];
             const fvPatchScalarField& pgradTv = gradTv.boundaryField()[patchi];
             const fvPatchScalarField& pgradU = gradU.boundaryField()[patchi];
-
-            const fvPatchScalarField& pOuterSum = outerSum.boundaryField()[patchi];
-            const fvPatchScalarField& pnDmix = nDmix.boundaryField()[patchi];
-
+            
+            const fvPatchScalarField& pOuterSum = outerSum.boundaryField()[patchi]; // NEW VINCENT 03/08/2016
+            const fvPatchScalarField& pnDmix = nDmix.boundaryField()[patchi]; // NEW VINCENT 03/08/2016
+            
             fvPatchScalarField& pmfpMix = mfpMix_.boundaryFieldRef()[patchi];
             fvPatchScalarField& pKnov = Knov_.boundaryFieldRef()[patchi];
             fvPatchScalarField& pKnGLL = KnGLL_.boundaryFieldRef()[patchi];
@@ -303,7 +302,7 @@ void Foam::rarefied<ThermoType>::correct(const volVectorField& U)
 
             forAll(prho, facei)
             {
-                if(oldMfpDefinition_)
+                if(oldMfpDefinition_) // NEW VINCENT 03/08/2016
                 {
                     pmfpMix[facei] = ptMfpMix[facei]*pmuMix[facei]/prho[facei];
                 }
@@ -315,7 +314,7 @@ void Foam::rarefied<ThermoType>::correct(const volVectorField& U)
                 {
                     pmfpMix[facei] = mfpModel_().mfp(0).boundaryField()[patchi][facei];
                 }*/
-
+                
                 pKnGLLRho[facei] = pmfpMix[facei]/prho[facei]*pgradRho[facei];
                 if(pTv[0] != 0.0)
                 {
@@ -335,9 +334,9 @@ void Foam::rarefied<ThermoType>::correct(const volVectorField& U)
     {
         if(oldMfpDefinition_)
         {
-            updateCoefficients();
+            updateCoefficients(); 
 
-            const volScalarField& T = thermo_.T();
+            const volScalarField& T = thermo_.Tt();
             const volScalarField& p = thermo_.p();
             const volScalarField& rho = thermo_.rho();
             const volScalarField& muMix = thermo_.mu();
@@ -345,15 +344,13 @@ void Foam::rarefied<ThermoType>::correct(const volVectorField& U)
             volScalarField tMfpMix = mfpMix_*0.0;
 
             forAll(species(), speciei)
-            {
+            {  
                 const volScalarField& X = thermo_.composition().X()[speciei];
                 const volScalarField& pD = thermo_.composition().pD()[speciei];
-                // NOTE VINCENT: non-constant declaration because it has to be
-                // multiplied by mu_i/rho_i
-                volScalarField& mfp = mfpModel_().mfp(speciei);
+                volScalarField& mfp = mfpModel_().mfp(speciei); // NOTE VINCENT: non-constant declaration because it has to be multiplied by mu_i/rho_i
 
                 tMfpMix.boundaryFieldRef() += X.boundaryField()*mfp.boundaryField();
-
+                
                 forAll(rho.boundaryField(), patchi)
                 {
                     const fvPatchScalarField& pX = X.boundaryField()[patchi];
@@ -361,7 +358,7 @@ void Foam::rarefied<ThermoType>::correct(const volVectorField& U)
                     const fvPatchScalarField& pp = p.boundaryField()[patchi];
                     const fvPatchScalarField& pT = T.boundaryField()[patchi];
                     fvPatchScalarField& pmfp = mfp.boundaryFieldRef()[patchi];
-
+                    
                     forAll(pp, facei)
                     {
                         if(pX[facei] > miniXs_)
@@ -375,13 +372,13 @@ void Foam::rarefied<ThermoType>::correct(const volVectorField& U)
                     }
                 }
             }
-
+            
             forAll(rho.boundaryField(), patchi)
             {
                 const fvPatchScalarField& pmuMix = muMix.boundaryField()[patchi];
                 const fvPatchScalarField& ptMfpMix = tMfpMix.boundaryField()[patchi];
-                const fvPatchScalarField& prho = rho.boundaryField()[patchi];
-
+                const fvPatchScalarField& prho = rho.boundaryField()[patchi]; 
+                
                 fvPatchScalarField& pmfpMix = mfpMix_.boundaryFieldRef()[patchi];
 
                 forAll(prho, facei)
@@ -392,12 +389,12 @@ void Foam::rarefied<ThermoType>::correct(const volVectorField& U)
         }
         else
         {
-            const volScalarField& Tt = thermo_.T();
+            const volScalarField& Tt = thermo_.Tt();
             const scalarField& TtCells = Tt.internalField();
-
+            
             volScalarField innerSum = mfpMix_, outerSum = mfpMix_;
             volScalarField nDmix = thermo_.composition().nD()[0];
-
+            
             //- Initialisation
             forAll(TtCells, celli)
             {
@@ -405,7 +402,7 @@ void Foam::rarefied<ThermoType>::correct(const volVectorField& U)
                 outerSum[celli] = 0.0;
                 nDmix[celli] = 0.0;
             }
-
+            
             forAll(Tt.boundaryField(), patchi)
             {
                 forAll(Tt.boundaryField()[patchi], facei)
@@ -417,15 +414,15 @@ void Foam::rarefied<ThermoType>::correct(const volVectorField& U)
             }
 
             forAll(species(), speciei)
-            {
+            {  
                 const volScalarField& nDi = thermo_.composition().nD()[speciei];
-
+                
                 //- Initialisation
                 forAll(TtCells, celli)
                 {
                     innerSum[celli] = 0.0;
                 }
-
+                
                 forAll(Tt.boundaryField(), patchi)
                 {
                     forAll(Tt.boundaryField()[patchi], facei)
@@ -433,44 +430,44 @@ void Foam::rarefied<ThermoType>::correct(const volVectorField& U)
                         innerSum.boundaryFieldRef()[patchi][facei] = 0.0;
                     }
                 }
-
+                
                 //- Calculation
                 forAll(species(), speciej)
                 {
                     const volScalarField& nDj = thermo_.composition().nD()[speciej];
-
+                    
                     forAll(Tt.boundaryField(), patchi)
                     {
                         const fvPatchScalarField& pTt = Tt.boundaryField()[patchi];
                         const fvPatchScalarField& pnDj = nDj.boundaryField()[patchi];
-                        fvPatchScalarField& pInnerSum = innerSum.boundaryFieldRef()[patchi];
-
+                        fvPatchScalarField& pInnerSum = innerSum.boundaryFieldRef()[patchi]; 
+                        
                         forAll(pTt, facei)
                         {
                             pInnerSum[facei] += max(pnDj[facei]*innerQuantity(speciei, speciej, pTt[facei]), Foam::VSMALL);
                         }
                     }
                 }
-
+                
                 forAll(nDi.boundaryField(), patchi)
                 {
-                    const fvPatchScalarField& pnDi = nDi.boundaryField()[patchi];
+                    const fvPatchScalarField& pnDi = nDi.boundaryField()[patchi]; 
                     const fvPatchScalarField& pInnerSum = innerSum.boundaryField()[patchi];
-                    fvPatchScalarField& pOuterSum = outerSum.boundaryFieldRef()[patchi];
-
+                    fvPatchScalarField& pOuterSum = outerSum.boundaryFieldRef()[patchi];  
+                    
                     forAll(pnDi, facei)
                     {
                         pOuterSum[facei] += pnDi[facei]/pInnerSum[facei];
                     }
                 }
-
+                
                 nDmix.boundaryFieldRef() += nDi.boundaryField();
             }
-
+            
             forAll(mfpMix_.boundaryField(), patchi)
             {
                 const fvPatchScalarField& pOuterSum = outerSum.boundaryField()[patchi];
-                const fvPatchScalarField& pnDmix = nDmix.boundaryField()[patchi];
+                const fvPatchScalarField& pnDmix = nDmix.boundaryField()[patchi]; 
                 fvPatchScalarField& pmfpMix = mfpMix_.boundaryFieldRef()[patchi];
 
                 forAll(pmfpMix, facei)
@@ -480,7 +477,7 @@ void Foam::rarefied<ThermoType>::correct(const volVectorField& U)
             }
         }
     }
-}
+} 
 
 
 template<class ThermoType>
@@ -491,35 +488,35 @@ void Foam::rarefied<ThermoType>::write()
         if (writeMfpSpecies_)
         {
             forAll(species(), speciei)
-            {
-                mfpModel_().mfp(speciei).write();
-            }
-        }
-
+            {  
+                mfpModel_().mfp(speciei).write();  
+            }      
+        } 
+        
         if (writeMfpMixture_)
         {
-            mfpMix_.write();
+            mfpMix_.write();     
         }
-
+        
         if (writeKnGLL_)
         {
-            KnGLL_.write();
-        }
-
+            KnGLL_.write();     
+        } 
+        
         if (writeKnGLLComponents_)
         {
             forAll(KnsGLL_, i)
-            {
+            {        
                 KnsGLL_[i].write();
-            }
-        }
-
+            }     
+        }  
+        
         if (writeKnOv_)
         {
-            Knov_.write();
-        }
-    }
-}
+            Knov_.write();     
+        } 
+    }   
+} 
 
 
 template<class ThermoType>
@@ -534,6 +531,6 @@ bool Foam::rarefied<ThermoType>::read()
         return false;
     }
 }
-
+   
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2012 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -23,12 +23,9 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-namespace Foam
-{
-
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-inline HoffertLienReactionRate::HoffertLienReactionRate
+inline Foam::HoffertLienReactionRate::HoffertLienReactionRate
 (
     const scalar A,
     const scalar beta,
@@ -41,7 +38,7 @@ inline HoffertLienReactionRate::HoffertLienReactionRate
 {}
 
 
-inline HoffertLienReactionRate::HoffertLienReactionRate
+inline Foam::HoffertLienReactionRate::HoffertLienReactionRate
 (
     const speciesTable&,
     Istream& is
@@ -55,7 +52,7 @@ inline HoffertLienReactionRate::HoffertLienReactionRate
 }
 
 
-inline HoffertLienReactionRate::HoffertLienReactionRate
+inline Foam::HoffertLienReactionRate::HoffertLienReactionRate
 (
     const speciesTable&,
     const dictionary& dict
@@ -69,7 +66,7 @@ inline HoffertLienReactionRate::HoffertLienReactionRate
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-inline scalar HoffertLienReactionRate::operator()
+inline Foam::scalar Foam::HoffertLienReactionRate::operator()
 (
     const scalar p,
     const scalar T,
@@ -91,7 +88,7 @@ inline scalar HoffertLienReactionRate::operator()
 }
 
 
-inline void HoffertLienReactionRate::write(Ostream& os) const
+inline void Foam::HoffertLienReactionRate::write(Ostream& os) const
 {
     os.writeKeyword("A") << A_ << token::END_STATEMENT << nl;
     os.writeKeyword("beta") << beta_ << token::END_STATEMENT << nl;
@@ -99,7 +96,7 @@ inline void HoffertLienReactionRate::write(Ostream& os) const
 }
 
 
-inline Ostream& operator<<
+inline Foam::Ostream& Foam::operator<<
 (
     Ostream& os,
     const HoffertLienReactionRate& arr
@@ -111,9 +108,5 @@ inline Ostream& operator<<
     return os;
 }
 
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-} // End namespace Foam
 
 // ************************************************************************* //

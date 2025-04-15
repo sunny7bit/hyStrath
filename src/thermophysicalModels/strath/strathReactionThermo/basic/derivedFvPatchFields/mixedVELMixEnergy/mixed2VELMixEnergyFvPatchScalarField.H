@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2012 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -28,8 +28,8 @@ Group
     grpThermoBoundaryConditions
 
 Description
-    This boundary condition provides a mixed condition for the
-    vibro-electronic energy mode
+    This boundary condition provides a mixed condition for the 
+    trnas-rotational mode of the internal energy
 
 SeeAlso
     Foam::mixedFvPatchField
@@ -43,7 +43,8 @@ SourceFiles
 #define mixed2VELMixEnergyFvPatchScalarField_H
 
 #include "mixedFvPatchFields.H"
-#include "rho2ReactionThermo.H"
+
+#include "rho2ReactionThermo.H" // NEW VINCENT 15/02/2017
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -51,7 +52,7 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-            Class mixed2VELMixEnergyFvPatchScalarField Declaration
+               Class mixed2VELMixEnergyFvPatchScalarField Declaration
 \*---------------------------------------------------------------------------*/
 
 class mixed2VELMixEnergyFvPatchScalarField
@@ -64,8 +65,8 @@ private:
     // Private data
 
         // Thermo package that contains species patch data
-        const rho2ReactionThermo& thermo_;
-
+        const rho2ReactionThermo& thermo_; // NEW VINCENT 15/02/201
+        
 
 public:
 

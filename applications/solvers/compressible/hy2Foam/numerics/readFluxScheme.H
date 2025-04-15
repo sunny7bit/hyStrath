@@ -3,8 +3,6 @@ typedef void (*FnPtr)
 (
     const bool&,
     const bool&,
-    const bool&,
-    const scalar&,
     const vector&,
     const scalar&,
     const scalar&,
@@ -12,6 +10,8 @@ typedef void (*FnPtr)
     const scalar&,
     const PtrList<scalar>&,
     const PtrList<scalar>&,
+    const PtrList<scalar>&, // NEW Zanardi
+    const PtrList<scalar>&, // NEW Zanardi
     const vector&,
     const vector&,
     const vector&,
@@ -25,6 +25,7 @@ typedef void (*FnPtr)
     scalar&,
     vector&,
     scalar&,
+    PtrList<scalar>&, // NEW Zanardi
     vector&,
     PtrList<scalar>&,
     scalar&
@@ -33,37 +34,41 @@ typedef void (*FnPtr)
 std::map<word, FnPtr> fluxMap;
 fluxMap["Kurganov"] = KurganovFlux;
 fluxMap["Tadmor"] = TadmorFlux;
+fluxMap["KFVS"] = KFVSFlux;
+fluxMap["LxF"] = LxFFlux;
+fluxMap["ROE"] = ROEFlux;
 
 word fluxScheme("Kurganov");
 FixedList<word, 2> blendedSchemes;
 
 if (mesh.schemesDict().readIfPresent("fluxScheme", fluxScheme))
 {
-    if
-    (
-        (fluxScheme == "Tadmor")
-     or (fluxScheme == "Kurganov")
-    )
+    if (
+             (fluxScheme == "Tadmor") 
+          or (fluxScheme == "Kurganov")
+          or (fluxScheme == "AUSM+-up")
+          or (fluxScheme == "KFVS")
+          or (fluxScheme == "LxF")
+          or (fluxScheme == "ROE")
+       )
     {
         Info<< "fluxScheme: " << fluxScheme << endl;
     }
     else if (fluxScheme == "blended")
     {
-        if (mesh.schemesDict().readIfPresent("blendedSchemes", blendedSchemes))
+        if(mesh.schemesDict().readIfPresent("blendedSchemes", blendedSchemes))
         {
-            Info<< "fluxScheme for shock vicinity: " << blendedSchemes[0]
-                << endl;
-            Info<< "fluxScheme for near-wall region: " << blendedSchemes[1]
-                << endl;
+            Info<< "fluxScheme for shock vicinity: " << blendedSchemes[0] << endl;
+            Info<< "fluxScheme for near-wall region: " << blendedSchemes[1] << endl;
         }
         else
         {
             FatalErrorIn
             (
-                "readFluxScheme"
+                "hy2Foam::readFluxScheme"
             )   << "blendedSchemes: " << fluxScheme
                 << " is not a valid choice. "
-                << "Options are: Kurganov, and Tadmor."
+                << "Options are: Kurganov, Tadmor, ROE, KFVS, LxF and AUSM+-up"
                 << abort(FatalError);
         }
     }
@@ -71,16 +76,15 @@ if (mesh.schemesDict().readIfPresent("fluxScheme", fluxScheme))
     {
         FatalErrorIn
         (
-            "readFluxScheme"
+            "hy2Foam::readFluxScheme"
         )   << "fluxScheme: " << fluxScheme
-            << " is not a valid choice. Options are: Kurganov, Tadmor, "
-            << "and blended"
+            << " is not a valid choice. "
+            << "Options are: Kurganov, Tadmor, ROE, KFVS, LxF, AUSM+ -up and blended"
             << abort(FatalError);
     }
 }
 
-scalar sqrMachInf =
-    sqr(mesh.schemesDict().lookupOrDefault<scalar>("Mach_inf", SMALL));
+scalar sqrMachInf = sqr(mesh.schemesDict().lookupOrDefault<scalar>("Mach_inf", SMALL));
 
 
 // --- Declarations ---
@@ -120,6 +124,33 @@ surfaceVectorField phiUp
     dimensionedVector("phiUp", dimMass/dimTime*dimVelocity, vector::zero)
 );
 
+// NEW Zanardi
+PtrList<surfaceScalarField> phiYk(Y.size());
+forAll(phiYk, speciei)
+{
+    phiYk.set
+    (
+	speciei,
+	new surfaceScalarField
+	(
+	    IOobject
+	    (
+		"phiYk" + Y[speciei].name(),
+		runTime.timeName(),
+		mesh
+	    ),
+	    mesh,
+	    dimensionedScalar
+	    (
+		"phiYk" + Y[speciei].name(), 
+		dimMass/dimTime, 
+		0.0
+	    )
+	)
+    );
+}
+// ---
+
 surfaceScalarField phiEp
 (
     IOobject
@@ -134,14 +165,14 @@ surfaceScalarField phiEp
 
 PtrList<surfaceScalarField> phiEvk(noSolvedVibEq);
 
-if (downgradeSingleT)
+if(downgradeSingleT)
 {
     phiEvk.clear();
 }
-else if (downgradeSingleTv)
+else if(downgradeSingleTv)
 {
     phiEvk.resize(1);
-
+    
     phiEvk.set
     (
         0,
@@ -161,7 +192,7 @@ else if (downgradeSingleTv)
 else
 {
     forAll(phiEvk, speciei)
-    {
+    { 
         phiEvk.set
         (
             speciei,
@@ -176,8 +207,8 @@ else
                 mesh,
                 dimensionedScalar
                 (
-                    "phiEvk" + Y[speciei].name(),
-                    dimEnergy/dimTime,
+                    "phiEvk" + Y[speciei].name(), 
+                    dimEnergy/dimTime, 
                     0.0
                 )
             )

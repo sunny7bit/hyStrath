@@ -1,28 +1,29 @@
 
-// --- Solve vibrational energy equation, VISCOUS
+// --- Solve vibrational energy equations, VISCOUS
 if (!inviscid)
 {
     fvScalarMatrix evEqnViscous
     (
         fvm::ddt(rho, ev) - fvc::ddt(rho, ev)
-      - fvm::laplacian(transport().kappave()/thermo.CvvelMix(), ev)
-      ==
-        fvOptions(rho, ev)
+      - fvm::laplacian(transport().alphave(), ev)
     );
-
-    if (speciesDiffusionName != "noSpeciesDiffusion")
+    
+    if(speciesDiffusionName != "noSpeciesDiffusion")
     {
-        evEqnViscous +=
-            fvc::div
-            (
-                speciesDiffusion().multiSpeciesVEHeatSource(),
-                "div(diffusiveFluxes)"
-            );
+        volVectorField sumJsByevs = speciesDiffusion().Jcorr(0)*hevk[0];
+        
+        for(int speciei = 1; speciei < Y.size(); speciei++)
+        {
+            sumJsByevs += speciesDiffusion().Jcorr(speciei)*hevk[speciei];
+        }
+        
+        evEqnViscous += fvc::div(sumJsByevs, "div(diffusiveFluxes)");
     }
-
+    
     evEqnViscous.solve();
-
-    ev.correctBoundaryConditions();
+    
     rhoEv = rho*ev;
+    
+    thermo.correctHEVK();
 }
 

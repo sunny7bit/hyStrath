@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2012 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@ SourceFiles
 #include "scalarField.H"
 #include "typeInfo.H"
 
-#include "DynamicList.H"
+#include "DynamicList.H" 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -57,18 +57,18 @@ class ImpactIonisationArrhenius2ReactionRate
 
         // Bounds delimiting the different temperature sub-ranges
         DynamicList<scalar> Tbound_;
-
+        
         // List of the standard Arrhenius coefficients
         DynamicList<scalar> A_;
         DynamicList<scalar> beta_;
         DynamicList<scalar> Ta_;
         DynamicList<scalar> C_;
-
+        
         // Smoothing between the sub-ranges
         scalar smoothingTemperatureRange_;
-
+        
     // Private member function
-
+        
         label findBounds
         (
             const scalar xpt
@@ -76,7 +76,7 @@ class ImpactIonisationArrhenius2ReactionRate
         {
             label bMax = Tbound_.size();
             label bCurrent = 0;
-
+            
             if (bMax == 0)
             {
                 return bCurrent;
@@ -85,7 +85,7 @@ class ImpactIonisationArrhenius2ReactionRate
             {
                 while (bCurrent < bMax and xpt > Tbound_[bCurrent])
                 {
-                    bCurrent += 1;
+                    bCurrent += 1;   
                 }
                 return bCurrent;
             }
@@ -138,7 +138,7 @@ public:
 
         //- Write to stream
         inline void write(Ostream& os) const;
-
+        
 
     // Ostream Operator
 

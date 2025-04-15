@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2013 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -24,6 +24,14 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "basic2Thermo.H"
+/*#include "zeroGradientFvPatchFields.H"
+#include "fixedEnergyFvPatchScalarField.H"
+#include "gradientEnergyFvPatchScalarField.H"
+#include "mixedEnergyFvPatchScalarField.H"
+#include "fixedJumpFvPatchFields.H"
+#include "fixedJumpAMIFvPatchFields.H"
+#include "energyJumpFvPatchScalarField.H"
+#include "energyJumpAMIFvPatchScalarField.H"*/
 
 
 /* * * * * * * * * * * * * * * private static data * * * * * * * * * * * * * */
@@ -96,29 +104,15 @@ Foam::basic2Thermo::basic2Thermo
 
     p_(lookupOrConstruct(mesh, "p")),
 
-    pe_
-    (
-        IOobject
-        (
-            "pe",
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimPressure
-    ),
-    
     T_
     (
         IOobject
         (
-            phasePropertyName("Tt"),
+            phasePropertyName("Tov"),
             mesh.time().timeName(),
             mesh,
-            IOobject::READ_IF_PRESENT,
-            IOobject::AUTO_WRITE
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
         ),
         mesh,
         dimTemperature
@@ -149,30 +143,16 @@ Foam::basic2Thermo::basic2Thermo
     phaseName_(phaseName),
 
     p_(lookupOrConstruct(mesh, "p")),
-    
-    pe_
-    (
-        IOobject
-        (
-            phasePropertyName("pe"),
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimensionedScalar("pe", dimPressure, 0.0)
-    ),
 
     T_
     (
         IOobject
         (
-            phasePropertyName("Tt"),
+            phasePropertyName("Tov"),
             mesh.time().timeName(),
             mesh,
-            IOobject::READ_IF_PRESENT,
-            IOobject::AUTO_WRITE
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
         ),
         mesh,
         dimTemperature
@@ -205,6 +185,33 @@ const Foam::basic2Thermo& Foam::basic2Thermo::lookupThermo
     const fvPatchScalarField& pf
 )
 {
+    /*if (pf.db().foundObject<basic2Thermo>(dictName))
+    {
+        return pf.db().lookupObject<basic2Thermo>(dictName);
+    }
+    else
+    {
+        HashTable<const basic2Thermo*> thermos =
+            pf.db().lookupClass<basic2Thermo>();
+
+        for
+        (
+            HashTable<const basic2Thermo*>::iterator iter = thermos.begin();
+            iter != thermos.end();
+            ++iter
+        )
+        {
+            if
+            (
+                &(iter()->he().dimensionedInternalField())
+              == &(pf.dimensionedInternalField())
+            )
+            {
+                return *iter();
+            }
+        }
+    }*/
+
     return pf.db().lookupObject<basic2Thermo>(dictName);
 }
 
@@ -351,27 +358,15 @@ Foam::wordList Foam::basic2Thermo::splitThermoName
 }
 
 
-const Foam::volScalarField& Foam::basic2Thermo::p() const
-{
-    return p_;
-}
-
-
 Foam::volScalarField& Foam::basic2Thermo::p()
 {
     return p_;
 }
 
 
-const Foam::volScalarField& Foam::basic2Thermo::pe() const
+const Foam::volScalarField& Foam::basic2Thermo::p() const
 {
-    return pe_;
-}
-
-
-Foam::volScalarField& Foam::basic2Thermo::pe()
-{
-    return pe_;
+    return p_;
 }
 
 

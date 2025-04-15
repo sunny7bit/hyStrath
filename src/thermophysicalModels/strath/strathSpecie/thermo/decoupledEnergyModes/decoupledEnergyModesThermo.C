@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -43,10 +43,7 @@ void Foam::decoupledEnergyModesThermo<EquationOfState>::checkInputData() const
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 template<class EquationOfState>
-Foam::decoupledEnergyModesThermo<EquationOfState>::decoupledEnergyModesThermo
-(
-    Istream& is
-)
+Foam::decoupledEnergyModesThermo<EquationOfState>::decoupledEnergyModesThermo(Istream& is)
 :
     EquationOfState(is),
     Tlow_(readScalar(is)),
@@ -58,46 +55,29 @@ Foam::decoupledEnergyModesThermo<EquationOfState>::decoupledEnergyModesThermo
     {
         is >> decoupledCvCoeffs_[i];
     }
-
+    
     forAll(vibrationalList_, i)
     {
         is >> vibrationalList_[i];
     }
-
+    
     forAll(electronicList_, i)
     {
         is >> electronicList_[i];
     }
 
     // Check state of Istream
-    is.check
-    (
-        "decoupledEnergyModesThermo::decoupledEnergyModesThermo(Istream& is)"
-    );
+    is.check("decoupledEnergyModesThermo::decoupledEnergyModesThermo(Istream& is)");
 }
 
 
 template<class EquationOfState>
-Foam::decoupledEnergyModesThermo<EquationOfState>::decoupledEnergyModesThermo
-(
-    const dictionary& dict
-)
+Foam::decoupledEnergyModesThermo<EquationOfState>::decoupledEnergyModesThermo(const dictionary& dict)
 :
     EquationOfState(dict),
-    Tlow_
-    (
-        dict.subDict("thermodynamics")
-            .lookupOrDefault<scalar>("Tlow", Foam::SMALL)
-    ),
-    Thigh_
-    (
-        dict.subDict("thermodynamics")
-            .lookupOrDefault<scalar>("Thigh", Foam::GREAT)
-    ),
-    decoupledCvCoeffs_
-    (
-        dict.subDict("thermodynamics").lookup("decoupledCvCoeffs")
-    ),
+    Tlow_(dict.subDict("thermodynamics").lookupOrDefault<scalar>("Tlow", Foam::SMALL)),
+    Thigh_(dict.subDict("thermodynamics").lookupOrDefault<scalar>("Thigh", Foam::GREAT)),
+    decoupledCvCoeffs_(dict.subDict("thermodynamics").lookup("decoupledCvCoeffs")),
     vibrationalList_(dict.subDict("thermodynamics").lookup("vibrationalList")),
     electronicList_(dict.subDict("thermodynamics").lookup("electronicList"))
 {
@@ -141,14 +121,14 @@ Foam::Ostream& Foam::operator<<
     {
         os << dem.decoupledCvCoeffs_[i] << ' ';
     }
-
+    
     os << nl << "    ";
 
     forAll(dem.vibrationalList_, i)
     {
         os << dem.vibrationalList_[i] << ' ';
     }
-
+    
     os << nl << "    ";
 
     forAll(dem.electronicList_, i)
@@ -160,8 +140,7 @@ Foam::Ostream& Foam::operator<<
 
     os.check
     (
-        "operator<<(Ostream& os, "
-        "const decoupledEnergyModesThermo<EquationOfState>& dem)"
+        "operator<<(Ostream& os, const decoupledEnergyModesThermo<EquationOfState>& dem)"
     );
 
     return os;

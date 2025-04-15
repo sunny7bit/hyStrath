@@ -2,16 +2,16 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright held by original author
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
-    OpenFOAM is free software: you can redistribute it and/or modify it
-    under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+    OpenFOAM is free software; you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the
+    Free Software Foundation; either version 2 of the License, or (at your
+    option) any later version.
 
     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -19,7 +19,8 @@ License
     for more details.
 
     You should have received a copy of the GNU General Public License
-    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+    along with OpenFOAM; if not, write to the Free Software Foundation,
+    Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
 Namespace
     Foam::basicMfpModels
@@ -42,7 +43,7 @@ SourceFiles
 #define basicMfpModel_H
 
 #include "specie.H"
-#include "advancedSpecie.H"
+#include "advancedSpecie.H" // NEW VINCENT
 #include "IOdictionary.H"
 #include "typeInfo.H"
 #include "runTimeSelectionTables.H"
@@ -71,16 +72,16 @@ class basicMfpModel
 protected:
 
     // Protected data
-
+    
         //- Species properties dictionary
         const dictionary& dict_;
-
+        
         //- Thermophysical properties dictionary
         const dictionary& dictThermoPhy_;
 
         //- Species name
         const word& name_;
-
+        
         //- Label associated with the species' name
         const label& speciesIndex_;
 
@@ -88,7 +89,7 @@ protected:
         const volScalarField& p_;
 
         // Heavy particle temperature [K]
-        const volScalarField& T_;
+        const volScalarField& Tt_;
 
 
     // Private Member Functions
@@ -107,7 +108,7 @@ public:
 
 
     // Declare run-time constructor selection table
-
+    
       declareRunTimeSelectionTable
       (
           autoPtr,
@@ -160,18 +161,18 @@ public:
 
 
     // Member Functions
-
+    
         //- Mean free path [m]
         virtual tmp<volScalarField> mfp() const = 0;
-
+         
         //- Mean free path for patch [m]
         virtual tmp<scalarField> mfp
         (
             const label patchi,
             const scalarField& p,
-            const scalarField& Tt
+            const scalarField& Tt            
         ) const = 0;
-
+       
 };
 
 

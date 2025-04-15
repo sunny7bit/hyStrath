@@ -2,16 +2,16 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright held by original author
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
-    OpenFOAM is free software: you can redistribute it and/or modify it
-    under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+    OpenFOAM is free software; you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the
+    Free Software Foundation; either version 2 of the License, or (at your
+    option) any later version.
 
     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -19,7 +19,8 @@ License
     for more details.
 
     You should have received a copy of the GNU General Public License
-    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+    along with OpenFOAM; if not, write to the Free Software Foundation,
+    Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
 \*---------------------------------------------------------------------------*/
 
@@ -33,15 +34,15 @@ License
 
 namespace Foam
 {
-
-// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
-
+  
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //  
+  
     defineTypeNameAndDebug(rarefactionParameter, 0);
     defineRunTimeSelectionTable(rarefactionParameter, fvMesh);
 }
 
 
-// * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
+// * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //  
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -55,16 +56,16 @@ Foam::rarefactionParameter::rarefactionParameter
     (
         thermo.transportDictionary()
     ),
-
-    mesh_(thermo.T().mesh()),
+    
+    mesh_(thermo.Tt().mesh()), 
     thermo_(thermo),
     turbulence_(turbulence),
-
+    
     computeRarefaction_(subDict("rarefiedParameters").lookupOrDefault<bool>("computeFieldAndBoundaries", true)),
     computeMfpBoundaries_(subDict("rarefiedParameters").lookupOrDefault<bool>("computeMfpBoundaries", true)),
     oldMfpDefinition_(subDict("rarefiedParameters").lookupOrDefault<bool>("oldMfpDefinition", false)),
     mfpModelName_(subDict("rarefiedParameters").lookup("mfpModel")),
-
+    
     mfpMix_
     (
         IOobject
@@ -78,7 +79,7 @@ Foam::rarefactionParameter::rarefactionParameter
         mesh_,
         dimensionedScalar("mfp", dimLength, 0.0)
     ),
-
+    
     Knov_
     (
         IOobject
@@ -92,9 +93,9 @@ Foam::rarefactionParameter::rarefactionParameter
         mesh_,
         dimensionedScalar("Kn_ov", dimless, 0.0)
     ),
-
-    characteristicLength_(readScalar(subDict("rarefiedParameters").lookup("characteristicLength"))),
-
+    
+    characteristicLength_(readScalar(subDict("rarefiedParameters").lookup("characteristicLength"))), 
+    
     KnGLL_
     (
         IOobject
@@ -108,14 +109,14 @@ Foam::rarefactionParameter::rarefactionParameter
         mesh_,
         dimensionedScalar("KnGLL", dimless, 0.0)
     ),
-
+    
     writeMfpSpecies_(subDict("rarefiedParameters").lookup("writeMfpSpecies", false)),
     writeMfpMixture_(subDict("rarefiedParameters").lookup("writeMfpMixture", false)),
     writeKnGLL_(subDict("rarefiedParameters").lookupOrDefault<bool>("writeKnGLL", false)),
     writeKnGLLComponents_(subDict("rarefiedParameters").lookupOrDefault<bool>("writeKnGLL_components", false)),
     writeKnOv_(subDict("rarefiedParameters").lookupOrDefault<bool>("writeKn_overall", false))
-
-{
+    
+{  
     if(thermo.hyLight())
     {
         computeRarefaction_ = false;
@@ -125,12 +126,12 @@ Foam::rarefactionParameter::rarefactionParameter
         writeKnGLLComponents_ = false;
         writeKnOv_ = false;
     }
-
+    
     const word dictThermoPhy
     (
         fileName(thermo.lookup("foamChemistryThermoFile")).name()
     );
-
+    
     // Construct the mean free path model
     mfpModel_.set
     (
@@ -138,18 +139,18 @@ Foam::rarefactionParameter::rarefactionParameter
         (
             IOdictionary::name(),
             dictThermoPhy,
-            species(),
-            thermo.p(),
-            thermo.T()
+            species(), 
+            thermo.p(), 
+            thermo.Tt()
         )
     );
-
-    mfp_.setSize(species().size());
+    
+    mfp_.setSize(species().size());    
     forAll(mfp_, speciei)
     {
         mfp_.set
         (
-            speciei,
+            speciei, 
             new volScalarField
             (
                 IOobject
@@ -165,16 +166,16 @@ Foam::rarefactionParameter::rarefactionParameter
             )
         );
     }
-
-    wordList KnsGLLNames(3, word::null);
+    
+    wordList KnsGLLNames(3, word::null); 
     KnsGLLNames[0] = "rho"; KnsGLLNames[1] = "T"; KnsGLLNames[2] = "U";
-
+    
     KnsGLL_.setSize(3);
     forAll(KnsGLL_, i)
-    {
+    {              
         KnsGLL_.set
         (
-            i,
+            i, 
             new volScalarField
             (
                 IOobject

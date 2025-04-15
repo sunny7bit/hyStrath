@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2013 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -67,12 +67,15 @@ protected:
 
             //- Pressure [Pa]
             volScalarField& p_;
-            
-            //- Electron pressure [Pa]
-            volScalarField pe_;
 
-            //- Trans-rotational temperature [K]
+            //- Overall temperature [K]
             volScalarField T_;
+
+            //- Laminar thermal diffusivity [kg/m/s]
+            //volScalarField alpha_;
+
+        //- Should the dpdt term be included in the enthalpy equation
+        //Switch dpdt_;
 
 
     // Protected Member Functions
@@ -233,16 +236,11 @@ public:
         // Access to thermodynamic state variables
 
             //- Pressure [Pa]
-            virtual const volScalarField& p() const;
-            
-            //- Non-const access to pressure [Pa]
+            //  Non-const access allowed for transport equations
             virtual volScalarField& p();
 
-            //- Electron pressure [Pa]
-            virtual const volScalarField& pe() const;
-            
-            //- Non-const access to electron pressure [Pa]
-            virtual volScalarField& pe();
+            //- Pressure [Pa]
+            virtual const volScalarField& p() const;
 
             //- Density [kg/m^3]
             virtual tmp<volScalarField> rho() const = 0;
@@ -255,18 +253,17 @@ public:
 
         // Fields derived from thermodynamic state variables
 
-            //- Trans-rotational temperature [K]
+            //- Overall temperature [K]
             virtual const volScalarField& T() const;
 
-            //- Non-const access to trans-rotational temperature [K]
+            //- Overall temperature [K]
+            //  Non-const access allowed for transport equations
             virtual volScalarField& T();
 
-            //- Heat capacity at constant pressure [J/kg/K]
-            //  TODO
+            //- Equilibrium heat capacity at constant pressure [J/kg/K]
             virtual tmp<volScalarField> Cp() const = 0;
 
-            //- Heat capacity at constant pressure [J/kg/K] for patch
-            //  TODO
+            //- Equilibrium heat capacity at constant pressure for patch [J/kg/K]
             virtual tmp<scalarField> Cp
             (
                 const scalarField& p,
@@ -274,13 +271,27 @@ public:
                 const label patchi
             ) const = 0;
 
-            //- Heat capacity at constant volume [J/kg/K]
-            //  TODO
+            //- Equilibrium heat capacity at constant volume [J/kg/K]
             virtual tmp<volScalarField> Cv() const = 0;
 
-            //- Heat capacity ratio, gamma = Cp/Cv
-            //  TODO
+            //- Equilibrium heat capacity at constant volume for patch [J/kg/K]
+            virtual tmp<scalarField> Cv
+            (
+                const scalarField& p,
+                const scalarField& T,
+                const label patchi
+            ) const = 0;
+
+            //- Equilibrium gamma = Cp/Cv []
             virtual tmp<volScalarField> gamma() const = 0;
+
+            //- Equilibrium gamma = Cp/Cv for patch []
+            virtual tmp<scalarField> gamma
+            (
+                const scalarField& p,
+                const scalarField& T,
+                const label patchi
+            ) const = 0;
 
 
         // Fields derived from transport state variables

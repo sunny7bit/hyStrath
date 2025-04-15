@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2012 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -28,8 +28,7 @@ Group
     grpThermoBoundaryConditions
 
 Description
-    This boundary condition provides a fixed condition for 
-    trans-rotational energy
+    This boundary condition provides a fixed condition for internal energy
 
     \heading Patch usage
 
@@ -37,7 +36,7 @@ Description
     \verbatim
     myPatch
     {
-        type            fixed2TREnergy;
+        type            fixed2Energy;
         value           uniform 100;
     }
     \endverbatim
@@ -54,7 +53,6 @@ SourceFiles
 #define fixed2TREnergyFvPatchScalarField_H
 
 #include "fixedValueFvPatchFields.H"
-#include "rho2ReactionThermo.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -69,13 +67,6 @@ class fixed2TREnergyFvPatchScalarField
 :
     public fixedValueFvPatchScalarField
 {
-
-private:
-
-    // Private data
-
-        // Thermo package that contains species patch data
-        const rho2ReactionThermo& thermo_;
 
 public:
 

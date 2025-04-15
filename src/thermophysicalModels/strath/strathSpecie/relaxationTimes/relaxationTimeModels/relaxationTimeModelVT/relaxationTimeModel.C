@@ -2,16 +2,16 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright held by original author
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
-    OpenFOAM is free software: you can redistribute it and/or modify it
-    under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+    OpenFOAM is free software; you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the
+    Free Software Foundation; either version 2 of the License, or (at your
+    option) any later version.
 
     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -19,30 +19,32 @@ License
     for more details.
 
     You should have received a copy of the GNU General Public License
-    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+    along with OpenFOAM; if not, write to the Free Software Foundation,
+    Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
 \*---------------------------------------------------------------------------*/
 
 #include "relaxationTimeModel.H"
 #include "dimensionedConstants.H"
 #include "constants.H"
+
 #include <string>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
-
-// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
-
+  
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //  
+  
     defineTypeNameAndDebug(relaxationTimeModel, 0);
     defineRunTimeSelectionTable(relaxationTimeModel, fvMesh);
 }
 
 
-// * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
+// * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //  
 
-
+  
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 Foam::relaxationTimeModel::relaxationTimeModel
@@ -55,96 +57,96 @@ Foam::relaxationTimeModel::relaxationTimeModel
     (
         thermo.twoTemperatureDictionary()
     ),
-    mesh_(thermo.T().mesh()),
+    
+    mesh_(thermo.Tt().mesh()), 
     thermo_(thermo),
     turbulence_(turbulence)
-{
+    
+{  
     const word dict2T(IOdictionary::name()), dictThermoPhy
     (
         fileName(thermo.lookup("foamChemistryThermoFile")).name()
     );
-
-    // Construct the V-T relaxation time model
+    
+    // Construct the relaxation time model
     tauVTijModel_.set
     (
         new VTModel
         (
             dict2T,
             dictThermoPhy,
-            molecules(),
-            species(),
-            thermo.p(),
-            thermo.T(),
-            thermo.composition().Tv(),
+            solvedVibEqSpecies(),
+            species(), 
+            thermo.p(), 
+            thermo.Tt(), 
+            thermo.composition().Tv(), 
             thermo.composition().nD()
         )
-    );
+    ); 
 
-    QVT_.setSize(molecules().size());
-    //QVTmode_.setSize(molecules().size()); // ABORTIVE WORK
+    QVT_.setSize(solvedVibEqSpecies().size()); //NEW VINCENT 05/08/2016
+    //QVTmode_.setSize(species().size()); // TODO ONGOING WORK
 
-    forAll(molecules(), moli)
+    forAll(solvedVibEqSpecies(), speciei) //NEW VINCENT 05/08/2016
     {
         QVT_.set
         (
-            moli,
+            speciei, 
             new volScalarField
             (
                 IOobject
                 (
-                    "QVT_" + molecules()[moli],
+                    "QVT_" + solvedVibEqSpecies()[speciei],
                     mesh_.time().timeName(),
                     mesh_,
                     IOobject::NO_READ,
                     IOobject::NO_WRITE
                 ),
                 mesh_,
-                dimensionedScalar("QVT", dimensionSet(1, -1, -3, 0, 0), 0.0)
+                dimensionedScalar("QVT", dimensionSet(1,-1,-3,0,0), 0.0)
             )
         );
     }
-
-    /*forAll(QVTmode_, moli) // ABORTIVE WORK
+    
+    /*forAll(QVTmode_, speciei) // TODO ONGOING WORK
     {
         QVTmode_.set
         (
-            moli,
-            new PtrList<volScalarField>
-            (
-                thermo.composition().noVibrationalTemp(moli)
-            )
+            speciei,
+            new PtrList<volScalarField>(thermo.composition().noVibrationalTemp(speciei))
         );
     }
-
-    forAll(QVTmode_, moli)
+    
+    forAll(QVTmode_, speciei)
     {
-        forAll(QVTmode_[moli], vibMode)
-        {
-            QVTmode_[moli].set
+      forAll(QVTmode_[speciei], vibMode)
+      {
+        QVTmode_[speciei].set
+        (
+            vibMode, 
+            new volScalarField
             (
-                vibMode,
-                new volScalarField
+                IOobject
                 (
-                    IOobject
-                    (
-                        "QVT_" + molecules()[moli] + "." + word(vibMode+1),
-                        mesh_.time().timeName(),
-                        mesh_,
-                        IOobject::NO_READ,
-                        IOobject::NO_WRITE
-                    ),
+                    "QVT_" + species()[speciei] + "." + word(vibMode+1),
+                    mesh_.time().timeName(),
                     mesh_,
-                    dimensionedScalar("QVT", dimensionSet(1, -1, -3, 0, 0), 0.0)
-                )
-            );
-        }
+                    IOobject::NO_READ,
+                    IOobject::NO_WRITE
+                ),
+                mesh_,
+                dimensionedScalar("QVT", dimensionSet(1,-1,-3,0,0), 0.0)
+            )
+        );
+      }
     }*/
 }
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-Foam::tmp<Foam::volScalarField> Foam::relaxationTimeModel::QVT()
+/*Foam::tmp<Foam::volScalarField>
+Foam::relaxationTimeModel::VTRelaxationSource()
 {
     tmp<volScalarField> tQVT
     (
@@ -152,30 +154,19 @@ Foam::tmp<Foam::volScalarField> Foam::relaxationTimeModel::QVT()
         (
             IOobject
             (
-                "QVT",
+                "VTRelaxationSource",
                 mesh_.time().timeName(),
                 mesh_,
                 IOobject::NO_READ,
-                IOobject::NO_WRITE,
-                false
+                IOobject::NO_WRITE
             ),
             mesh_,
             dimensionedScalar("QVT", dimensionSet(1, -1, -3, 0, 0), 0.0)
         )
     );
     
-    scalarField& QVTCells = tQVT.ref().primitiveFieldRef();
-    
-    forAll(molecules(), moli)
-    {
-        forAll(QVTCells, celli)
-        {
-            QVTCells[celli] += QVT_[moli][celli];
-        }
-    }
-
     return tQVT;
-}
+}*/
 
 
 bool Foam::relaxationTimeModel::read()

@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2016 OpenCFD Ltd.
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -57,7 +57,7 @@ void Foam::fv::acousticDampingSource::setBlendingFactor()
     const vectorField& Cf = mesh_.C();
 
     const scalar pi = constant::mathematical::pi;
-
+ 
     forAll(cells_, i)
     {
         label celli = cells_[i];

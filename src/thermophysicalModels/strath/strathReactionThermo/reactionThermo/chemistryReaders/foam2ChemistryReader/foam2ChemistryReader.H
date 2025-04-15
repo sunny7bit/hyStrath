@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -63,11 +63,11 @@ class foam2ChemistryReader
         //- Thermo properties dictionary
         dictionary thermoDict_;
 
-        //- Table of species
-        speciesTable& speciesTable_;
-        
         //- Table of the thermodynamic data given in the foamChemistry file
         HashPtrTable<ThermoType> speciesThermo_;
+
+        //- Table of species
+        speciesTable& speciesTable_;
 
         //- List of the reactions
         Reaction2List<ThermoType> reactions_;
@@ -83,10 +83,6 @@ class foam2ChemistryReader
 
         //- Disallow default bitwise assignment
         void operator=(const foam2ChemistryReader&);
-        
-        //- Remove species present in the thermo dictionary and that are not
-        //  listed in the table of species
-        void removeAbsentSpecies();
 
 
 public:

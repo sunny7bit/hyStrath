@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2013 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -55,7 +55,7 @@ class Euler2Implicit
 
         //- Coefficients dictionary
         dictionary coeffsDict_;
-
+        
         // Model constants
 
             //- Chemistry timescale
@@ -86,67 +86,45 @@ public:
 
     // Member Functions
 
-        void updateRRInReactionI
-        (
-            const label index,
-            const scalar pr,
-            const scalar pf,
-            const scalar corr,
-            const label lRef,
-            const label rRef,
-            const scalar p,
-            simpleMatrix<scalar>& RR
-        ) const;
+    void updateRRInReactionI
+    (
+        const label index,
+        const scalar pr,
+        const scalar pf,
+        const scalar corr,
+        const label lRef,
+        const label rRef,
+        const scalar p,
+        const scalar T,
+        simpleMatrix<scalar>& RR
+    ) const;
 
-        //- Update the concentrations and return the chemical time
-        virtual void solve
-        (
-            scalarField& c,
-            scalar& T,
-            List<scalar>& spTv,
-            scalar& p,
-            scalar& deltaT,
-            scalar& subDeltaT
-        ) const;
-
-        //- Update the concentrations and return the chemical time
-        virtual void solve
-        (
-            scalarField& c,
-            scalarField& cfwd,
-            scalar& T,
-            List<scalar>& spTv,
-            scalar& p,
-            scalar& deltaT,
-            scalar& subDeltaT
-        ) const;
-        
-        //- Update the concentrations and return the chemical time
-        virtual void solve
-        (
-            scalarField& c,
-            scalarField& cfwdiir,
-            labelList& iirIds,
-            scalar& T,
-            scalarList& spTv,
-            scalar& p,
-            scalar& deltaT,
-            scalar& subDeltaT
-        ) const;
-            
-        //- Update the concentrations and return the chemical time
-        virtual void solve
-        (
-            scalarField& c,
-            scalarField& cfwd,
-            scalarField& cfwdiir,
-            labelList& iirIds,
-            scalar& T,
-            scalarList& spTv,
-            scalar& p,
-            scalar& deltaT,
-            scalar& subDeltaT
-        ) const;
+    //- Update the concentrations and return the chemical time
+    virtual void solve
+    (
+        scalarField& c,
+        scalar& T,
+        scalar& Tv, // MODIFIED VINCENT
+        List<scalar>& spTv, // NEW VINCENT
+        scalar& p,
+        scalar& deltaT,
+        scalar& subDeltaT
+    ) const;
+    
+    //- Update the concentrations (also forward apart) and return the chemical time
+    virtual void solve
+    (
+        scalarField& c,
+        scalarField& cfwd, // MODIFIED VINCENT
+        scalarField& ceiiN, // NEW VINCENT
+        scalarField& ceiiO, // NEW VINCENT
+        scalar& T,
+        scalar& Tv,
+        List<scalar>& spTv,
+        scalar& p,
+        scalar& deltaT,
+        scalar& subDeltaT
+    ) const;
 };
 
 

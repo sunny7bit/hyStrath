@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2013 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -73,45 +73,22 @@ public:
         (
             scalarField &c,
             scalar& T,
-            List<scalar>& spTv,
-            scalar& p,
-            scalar& deltaT,
-            scalar& subDeltaT
-        ) const = 0;
-
-        //- Update the concentrations and return the chemical time
-        virtual void solve
-        (
-            scalarField& c,
-            scalarField& cfwd,
-            scalar& T,
+            scalar& Tv,
             List<scalar>& spTv,
             scalar& p,
             scalar& deltaT,
             scalar& subDeltaT
         ) const = 0;
         
-        //- Update the concentrations and return the chemical time
+        //- Update the concentrations (also forward apart) and return the chemical time
         virtual void solve
         (
             scalarField& c,
-            scalarField& cfwdiir,
-            labelList& iirIds,
+            scalarField& cwfd, // NEW VINCENT
+            scalarField& ceiiN, // NEW VINCENT
+            scalarField& ceiiO, // NEW VINCENT
             scalar& T,
-            List<scalar>& spTv,
-            scalar& p,
-            scalar& deltaT,
-            scalar& subDeltaT
-        ) const = 0;
-        
-        //- Update the concentrations and return the chemical time
-        virtual void solve
-        (
-            scalarField& c,
-            scalarField& cfwd,
-            scalarField& cfwdiir,
-            labelList& iirIds,
-            scalar& T,
+            scalar& Tv,
             List<scalar>& spTv,
             scalar& p,
             scalar& deltaT,

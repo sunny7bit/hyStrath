@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2013 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -39,16 +39,28 @@ Description
 
 namespace Foam
 {
+    // sensible enthalpy based reactions
+    
+    typedef Reaction2<demConstGasHThermoPhysicsH2TGD> demConstGasHReactionH2TGD;
+    
+    typedef Reaction2<demGasHThermoPhysicsH2TGD> demGasHReactionH2TGD;
+    
+    typedef Reaction2<demBEGasHThermoPhysicsH2TGD> demBEGasHReactionH2TGD;
+    
+    typedef Reaction2<demPLEGasHThermoPhysicsH2TGD> demPLEGasHReactionH2TGD;
+    
+    typedef Reaction2<demCEAGasHThermoPhysicsH2TGD> demCEAGasHReactionH2TGD;
+
     // internal energy based reactions
-
+    
     typedef Reaction2<demConstGasEThermoPhysicsH2TGD> demConstGasEReactionH2TGD;
-
+    
     typedef Reaction2<demGasEThermoPhysicsH2TGD> demGasEReactionH2TGD;
-
+    
     typedef Reaction2<demBEGasEThermoPhysicsH2TGD> demBEGasEReactionH2TGD;
-
+    
     typedef Reaction2<demPLEGasEThermoPhysicsH2TGD> demPLEGasEReactionH2TGD;
-
+    
     typedef Reaction2<demCEAGasEThermoPhysicsH2TGD> demCEAGasEReactionH2TGD;
 }
 

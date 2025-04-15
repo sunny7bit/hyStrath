@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2012 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ License
 #include "addToRunTimeSelectionTable.H"
 #include "fvPatchFieldMapper.H"
 #include "volFields.H"
-#include "multi2Thermo.H"
+#include "multi2Thermo.H" // NEW VINCENT
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -101,55 +101,57 @@ void Foam::gradient2VELMixEnergyFvPatchScalarField::updateCoeffs()
     {
         return;
     }
-
-    //Info<< "gradient2VELMixEnergy is used for patch called "
-    //    << patch().name() << endl;
+    
+    //Info << "gradient2VELMixEnergy is used for patch called " << patch().name() << endl;
 
     const multi2Thermo& multiThermo = multi2Thermo::lookup2Thermo(*this);
     const label patchi = patch().index();
 
     const scalarField& pw = multiThermo.p().boundaryField()[patchi];
-
+    
     fvPatchScalarField& Tvw =
-        const_cast<fvPatchScalarField&>
-        (
-            multiThermo.Tv().boundaryField()[patchi]
-        );
+        const_cast<fvPatchScalarField&>(multiThermo.Tv().boundaryField()[patchi]);
     Tvw.evaluate();
-
-    tmp<scalarField> thevel(new scalarField(pw.size()));
-    tmp<scalarField> thevelfC(new scalarField(pw.size()));
-    tmp<scalarField> tCvvelTvw(new scalarField(pw.size()));
     
-    scalarField& hevel = thevel.ref();
-    scalarField& hevelfC = thevelfC.ref();
-    scalarField& cvvelTvw = tCvvelTvw.ref();
-    
+    // NEW VINCENT 15/02/2017 *************************************************
+    tmp<Field<scalar>> thevel(new Field<scalar>(pw.size()));
+    Field<scalar>& hevel = thevel.ref();
     hevel = 0.0;
+    
+    tmp<Field<scalar>> thevelfC(new Field<scalar>(pw.size()));
+    Field<scalar>& hevelfC = thevelfC.ref();
     hevelfC = 0.0;
+    
+    tmp<Field<scalar>> tCvvelTvw(new Field<scalar>(pw.size()));
+    Field<scalar>& cvvelTvw = tCvvelTvw.ref();
     cvvelTvw = 0.0;
-
-    forAll(thermo_.composition().Y(), speciei)
+    
+    for(label speciei=0 ; speciei<thermo_.composition().Y().size() ; speciei++)
     {
         fvPatchScalarField& spYw =
-            const_cast<fvPatchScalarField&>
-            (
-                thermo_.composition().Y(speciei).boundaryField()[patchi]
-            );
+            const_cast<fvPatchScalarField&>(thermo_.composition().Y(speciei).boundaryField()[patchi]);
         spYw.evaluate();
-
-        hevel += spYw
-            *thermo_.composition().hevel(speciei, pw, Tvw, patchi);
-        hevelfC += spYw
-            *thermo_.composition().hevel(speciei, pw, Tvw, patch().faceCells());
-        cvvelTvw += spYw
-            *thermo_.composition().Cv_vel(speciei, pw, Tvw, patchi);
+        
+        hevel += spYw*thermo_.composition().hevel(speciei, pw, Tvw, patchi);
+        hevelfC += spYw*thermo_.composition().hevel(speciei, pw, Tvw, patch().faceCells());
+        cvvelTvw += spYw*thermo_.composition().Cv_vel(speciei, pw, Tvw, patchi)*Tvw.snGrad();
     }
     
-    cvvelTvw *= Tvw.snGrad();
-
-    gradient() = tCvvelTvw + patch().deltaCoeffs()*(thevel - thevelfC);
-
+    gradient() = tCvvelTvw
+      + patch().deltaCoeffs()*
+        (
+            thevel - thevelfC
+        );
+    // END NEW VINCENT 15/02/2017 *********************************************
+        
+    /*gradient() = thermo.Cv_v(pw, Tvw, patchi)*Tvw.snGrad()
+      + patch().deltaCoeffs()*
+        (
+            thermo.hevel(pw, Tvw, patchi)
+          - thermo.hevel(pw, Tvw, patch().faceCells())
+        );*/ // DELETED VINCENT 15/02/2017 OLD FORMULATION
+        
+        
     fixedGradientFvPatchScalarField::updateCoeffs();
 }
 

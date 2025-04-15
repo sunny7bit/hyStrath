@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2013 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -31,8 +31,7 @@ License
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::nonEqSmoluchowskiJumpTvMixFvPatchScalarField::
-nonEqSmoluchowskiJumpTvMixFvPatchScalarField
+Foam::nonEqSmoluchowskiJumpTvMixFvPatchScalarField::nonEqSmoluchowskiJumpTvMixFvPatchScalarField
 (
     const fvPatch& p,
     const DimensionedField<scalar, volMesh>& iF
@@ -43,7 +42,7 @@ nonEqSmoluchowskiJumpTvMixFvPatchScalarField
     rhoName_("rho"),
     muName_("mu"),
     alphaName_("alphave"),
-    gammaName_("gammatr"),
+    gammatrName_("gammatr"),
     mfpName_("mfp"),
     accommodationCoeff_(1.0),
     Twall_(p.size(), 0.0)
@@ -53,9 +52,8 @@ nonEqSmoluchowskiJumpTvMixFvPatchScalarField
     valueFraction() = 0.0;
 }
 
-
-Foam::nonEqSmoluchowskiJumpTvMixFvPatchScalarField::
-nonEqSmoluchowskiJumpTvMixFvPatchScalarField
+    
+Foam::nonEqSmoluchowskiJumpTvMixFvPatchScalarField::nonEqSmoluchowskiJumpTvMixFvPatchScalarField
 (
     const nonEqSmoluchowskiJumpTvMixFvPatchScalarField& ptf,
     const fvPatch& p,
@@ -69,15 +67,14 @@ nonEqSmoluchowskiJumpTvMixFvPatchScalarField
     rhoName_(ptf.rhoName_),
     muName_(ptf.muName_),
     alphaName_(ptf.alphaName_),
-    gammaName_(ptf.gammaName_),
+    gammatrName_(ptf.gammatrName_),
     mfpName_(ptf.mfpName_),
     accommodationCoeff_(ptf.accommodationCoeff_),
     Twall_(ptf.Twall_)
 {}
 
 
-Foam::nonEqSmoluchowskiJumpTvMixFvPatchScalarField::
-nonEqSmoluchowskiJumpTvMixFvPatchScalarField
+Foam::nonEqSmoluchowskiJumpTvMixFvPatchScalarField::nonEqSmoluchowskiJumpTvMixFvPatchScalarField
 (
     const fvPatch& p,
     const DimensionedField<scalar, volMesh>& iF,
@@ -89,7 +86,7 @@ nonEqSmoluchowskiJumpTvMixFvPatchScalarField
     rhoName_(dict.lookupOrDefault<word>("rho", "rho")),
     muName_(dict.lookupOrDefault<word>("mu", "mu")),
     alphaName_(dict.lookupOrDefault<word>("alphave", "alphave")),
-    gammaName_(dict.lookupOrDefault<word>("gammatr", "gammatr")),
+    gammatrName_(dict.lookupOrDefault<word>("gammatr", "gammatr")),
     mfpName_(dict.lookupOrDefault<word>("mfp", "mfp")),
     accommodationCoeff_(readScalar(dict.lookup("accommodationCoeff"))),
     Twall_("Twall", dict, p.size())
@@ -97,7 +94,7 @@ nonEqSmoluchowskiJumpTvMixFvPatchScalarField
     if
     (
         mag(accommodationCoeff_) < SMALL
-     || mag(accommodationCoeff_) > 1.0
+     || mag(accommodationCoeff_) > 2.0
     )
     {
         FatalIOErrorIn
@@ -133,8 +130,7 @@ nonEqSmoluchowskiJumpTvMixFvPatchScalarField
 }
 
 
-Foam::nonEqSmoluchowskiJumpTvMixFvPatchScalarField::
-nonEqSmoluchowskiJumpTvMixFvPatchScalarField
+Foam::nonEqSmoluchowskiJumpTvMixFvPatchScalarField::nonEqSmoluchowskiJumpTvMixFvPatchScalarField
 (
     const nonEqSmoluchowskiJumpTvMixFvPatchScalarField& ptpsf,
     const DimensionedField<scalar, volMesh>& iF
@@ -181,23 +177,23 @@ void Foam::nonEqSmoluchowskiJumpTvMixFvPatchScalarField::updateCoeffs()
         patch().lookupPatchField<volScalarField, scalar>(muName_);
     const fvPatchScalarField& palpha =
         patch().lookupPatchField<volScalarField, scalar>(alphaName_);
-    const fvPatchScalarField& pgamma =
-        patch().lookupPatchField<volScalarField, scalar>(gammaName_);
+    const fvPatchScalarField& pgammatr =
+        patch().lookupPatchField<volScalarField, scalar>(gammatrName_);  
     const fvPatchScalarField& pmfp =
-        patch().lookupPatchField<volScalarField, scalar>(mfpName_);
+        patch().lookupPatchField<volScalarField, scalar>(mfpName_);        
     const fvPatchScalarField& prho =
         patch().lookupPatchField<volScalarField, scalar>(rhoName_);
     const fvPatchVectorField& pU =
         patch().lookupPatchField<volVectorField, vector>(UName_);
 
-    scalarField C2
+    Field<scalar> C2
     (
-        pmfp*2.0*pgamma/(pgamma + 1.0)/(pmu/palpha)
-      * (2.0 - accommodationCoeff_)/accommodationCoeff_
+        pmfp*2.0/(pgammatr + 1.0)/(pmu/palpha) // Pr = mu*Cp/k = mu/alpha * Cp/Cv = mu/alpha * gamma
+        *(2.0 - accommodationCoeff_)/accommodationCoeff_
     );
 
-//    scalarField aCoeff(prho.snGrad() - prho/C2);
-//    scalarField KEbyRho(0.5*magSqr(pU));
+    Field<scalar> aCoeff(prho.snGrad() - prho/C2);
+    Field<scalar> KEbyRho(0.5*magSqr(pU));
 
     valueFraction() = (1.0/(1.0 + patch().deltaCoeffs()*C2));
     refValue() = Twall_;
@@ -208,10 +204,7 @@ void Foam::nonEqSmoluchowskiJumpTvMixFvPatchScalarField::updateCoeffs()
 
 
 // Write
-void Foam::nonEqSmoluchowskiJumpTvMixFvPatchScalarField::write
-(
-    Ostream& os
-) const
+void Foam::nonEqSmoluchowskiJumpTvMixFvPatchScalarField::write(Ostream& os) const
 {
     fvPatchScalarField::write(os);
 
@@ -219,7 +212,7 @@ void Foam::nonEqSmoluchowskiJumpTvMixFvPatchScalarField::write
     writeEntryIfDifferent<word>(os, "rho", "rho", rhoName_);
     writeEntryIfDifferent<word>(os, "mu", "mu", muName_);
     writeEntryIfDifferent<word>(os, "alphave", "alphave", alphaName_);
-    writeEntryIfDifferent<word>(os, "gammatr", "gammatr", gammaName_);
+    writeEntryIfDifferent<word>(os, "gammatr", "gammatr", gammatrName_);
     writeEntryIfDifferent<word>(os, "mfp", "mfp", mfpName_);
 
     os.writeKeyword("accommodationCoeff")

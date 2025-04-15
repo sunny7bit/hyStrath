@@ -2,16 +2,16 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright held by original author
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
-    OpenFOAM is free software: you can redistribute it and/or modify it
-    under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+    OpenFOAM is free software; you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the
+    Free Software Foundation; either version 2 of the License, or (at your
+    option) any later version.
 
     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -19,7 +19,8 @@ License
     for more details.
 
     You should have received a copy of the GNU General Public License
-    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+    along with OpenFOAM; if not, write to the Free Software Foundation,
+    Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
 Class
     Foam::relaxationTimeModel
@@ -36,6 +37,8 @@ SourceFiles
 #ifndef relaxationTimeModel_H
 #define relaxationTimeModel_H
 
+#include "fvc.H"
+
 #include "rho2ChemistryModel.H"
 #include "turbulentFluidThermoModel.H"
 #include "VTModel.H"
@@ -46,7 +49,7 @@ SourceFiles
 
 namespace Foam
 {
-
+  
 /*---------------------------------------------------------------------------*\
                     Class relaxationTimeModel Declaration
 \*---------------------------------------------------------------------------*/
@@ -55,9 +58,9 @@ class relaxationTimeModel
 :
     public IOdictionary
 {
-
-protected:
-
+    
+protected:  
+  
     // Protected data
 
         //- Mesh
@@ -74,18 +77,17 @@ protected:
 
         //- V-T relaxation time [s]
         PtrList<volScalarField> tauVT_;
-        //PtrList<PtrList<volScalarField> > tauVTmode_; // ABORTIVE WORK
-
-        //- V-T source term [kg/m^3/s] in the vibro-electronic energy
-        //  equation(s) 
+        //PtrList<PtrList<volScalarField> > tauVTmode_; // TODO ONGOING WORK
+        
+        //- V-T source term in the vib. energy equations [kg/m^3/s]
         PtrList<volScalarField> QVT_;
-        //PtrList<PtrList<volScalarField> > QVTmode_; // ABORTIVE WORK
+        //PtrList<PtrList<volScalarField> > QVTmode_; // TODO ONGOING WORK
 
 
 private:
-
+  
     // Private member functions
-
+      
         //- Disallow copy construct
         relaxationTimeModel(const relaxationTimeModel&);
 
@@ -94,13 +96,13 @@ private:
 
 
 public:
-
+ 
     //- Runtime type information
     TypeName("relaxationTimeModel");
 
-
+      
     // Declare run-time constructor selection table
-
+       
 #ifndef SWIG
     declareRunTimeSelectionTable
     (
@@ -114,9 +116,9 @@ public:
         (thermo, turbulence)
     );
 #endif
+  
 
-
-    // Constructors
+    // Constructors	  
 
         //- Construct from components
         relaxationTimeModel
@@ -126,8 +128,8 @@ public:
         );
 
 
-    // Selectors
-
+    // Selectors	  
+  
         //- Return a reference to the selected multispecies transport model
 
         static autoPtr<relaxationTimeModel> New
@@ -145,41 +147,46 @@ public:
 
     // Member Functions
 
-        // Access
-
+        // Access   
+           
             //- Return the const interspecies V-T relaxation time field
-            inline const volScalarField& tauVTij(label i, label j) const;
-
+            inline const volScalarField& tauVTij(label i, label j) const;  
+           
+            //- Return the const specie V-T relaxation time [s]
+            inline const volScalarField& tauVT(label speciei) const;  
+            
+            //- Return the const specie V-T relaxation time [s]
+            inline const volScalarField& tauVT(const word& specieName) const; 
+            
             //- Return the const source term in the corresponding vib. energy
             //  equation due to V-T energy transfer
-            inline const volScalarField& QVT(const label speciei) const;
-
+            inline const volScalarField& QVT(label speciei) const;
+            
             //- Return the const source term in the corresponding vib. energy
             //  equation due to V-T energy transfer
-            inline const volScalarField& QVT(const word& specieName) const;
-
+            inline const volScalarField& QVT(const word& specieName) const; 
+           
+            //- Return the non-const specie V-T relaxation time [s]
+            inline volScalarField& tauVT(label speciei);  
+            
+            //- Return the non-const specie V-T relaxation time [s]
+            inline volScalarField& tauVT(const word& specieName); 
+            
             //- Return the non-const source term in the corresponding vib.
             //  energy equation due to V-T energy transfer
-            inline volScalarField& QVT(const label speciei);
-
+            inline volScalarField& QVT(label speciei);
+            
             //- Return the non-const source term in the corresponding vib.
             //  energy equation due to V-T energy transfer
             inline volScalarField& QVT(const word& specieName);
-
-            //- Return the const Source term in vib. energy equations
+            
+            //- Return the const Source term in vib. energy equations 
             //  due to V-T energy transfer, vibrational mode vibMode
-/*            inline const volScalarField& QVT_mode*/
-/*            (*/
-/*                label speciei, */
-/*                label vibMode*/
-/*            ) const;  // ABORTIVE WORK*/
-
+            //inline const volScalarField& QVT_mode(label speciei, label vibMode) const;  // TODO ONGOING WORK
+            
             //- Return the table of species
             inline const speciesTable& species() const;
             
-            //- Return the table of molecular species
-            inline const speciesTable& molecules() const;
-
             //- Return the table of species having a vib. eq. being solved
             //  or a hack of this table for the single-vibrational pool model
             // that will contain all (ionised/nonionised) molecules
@@ -189,10 +196,9 @@ public:
             virtual scalar W(label i) const = 0;
 
 
-        //- Source term in vibro-electronic energy equation due to V-T energy
-        //  transfer
-        tmp<volScalarField> QVT();
-
+        //- Source term in vib. energy equations due to V-T energy transfer
+        //tmp<volScalarField> VTRelaxationSource();
+        
         //- Correct the V-T relaxation times and V-T energy transfer
         virtual void correct() = 0;
 

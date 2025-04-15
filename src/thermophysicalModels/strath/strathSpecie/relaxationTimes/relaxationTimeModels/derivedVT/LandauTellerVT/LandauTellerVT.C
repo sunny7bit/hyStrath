@@ -2,16 +2,16 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright held by original author
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
-    OpenFOAM is free software: you can redistribute it and/or modify it
-    under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+    OpenFOAM is free software; you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the
+    Free Software Foundation; either version 2 of the License, or (at your
+    option) any later version.
 
     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -19,119 +19,74 @@ License
     for more details.
 
     You should have received a copy of the GNU General Public License
-    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+    along with OpenFOAM; if not, write to the Free Software Foundation,
+    Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
 \*---------------------------------------------------------------------------*/
 
 #include "LandauTellerVT.H"
+#include "fvm.H"
 
 // * * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * //
 
 template<class ThermoType>
 void Foam::LandauTellerVT<ThermoType>::updateCoefficients()
-{
-    const dimensionedScalar zero =
-        dimensionedScalar("zero", dimless/dimTime, 0.0);
-        
-    const dimensionedScalar invtSMALL =
-        dimensionedScalar("SMALL", dimless/dimTime, Foam::SMALL);
-    
-    const label electronId = this->thermo_.composition().electronId();
-    
-    tmp<volScalarField> tXe
-    (
-        new volScalarField
-        (
-            IOobject
-            (
-                "Xe",
-                mesh_.time().timeName(),
-                mesh_,
-                IOobject::NO_READ,
-                IOobject::NO_WRITE,
-                false
-            ),
-            mesh_,
-            dimensionedScalar("zero", dimless, 0.0)
-        )
-    );
-    
-    if (electronId != -1)
-    {
-        volScalarField& XeCells = tXe.ref();
-        XeCells = thermo_.composition().X(electronId);
-    }
-    
-    tmp<volScalarField> tSumWeightedReciprocalRelaxTimes
-    (
-        new volScalarField
-        (
-            IOobject
-            (
-                "sumWeightedReciprocalRelaxTimes",
-                mesh_.time().timeName(),
-                mesh_,
-                IOobject::NO_READ,
-                IOobject::NO_WRITE,
-                false
-            ),
-            mesh_,
-            dimensionedScalar("zero", dimless/dimTime, 0.0)
-        )
-    );
-    
-    volScalarField& sumWeightedReciprocalRelaxTimes =
-        tSumWeightedReciprocalRelaxTimes.ref();
-    
+{     
     tauVTijModel_().update();
     
-    forAll(molecules(), moli)
+    forAll(solvedVibEqSpecies(), speciei)
     {
-        sumWeightedReciprocalRelaxTimes = zero;
+        volScalarField sumMolarWeightedReciprocalRelaxationTimes = 0/tauVTij(0,0);
+        volScalarField tmpXe = 0*thermo_.composition().X(0);
         
-        //- The contribution of free-electrons is not included
-        //  In: G. V. Candler and I. Nompelis.
-        //  "Computational Fluid Dynamics for Atmospheric Entry"
-        //  RTO-AVT-VKI Lecture Series 2009-AVT-162, Eq. 2.47, p. 15, 2009
-        forAll(thermo_.composition().heavySpecies(), j)
+        forAll(species(), speciej)
         {
-            const label speciej = thermo_.composition().heavySpeciesIds(j);
-            
             const volScalarField& Xj = thermo_.composition().X(speciej);
-
-            sumWeightedReciprocalRelaxTimes += Xj/tauVTij(moli, speciej);
-        }
-
-        tauVT_[moli] =
-            (1.0 - tXe.ref())/(sumWeightedReciprocalRelaxTimes + invtSMALL)
-          + tauVTijModel_().tauVTcorr(moli);
-    }
-
-
-    /*forAll(molecules(), moli) // ABORTIVE WORK
-    {
-        forAll(tauVTmode_[moli], mi)
-        {
-            sumWeightedReciprocalRelaxTimes = zero;
             
-            forAll(thermo_.composition().heavySpecies(), j)
+            // no electrons here (Candler 09), although (ScalabrinPhD 07) defined tauVTie
+            if(speciesThermo_[speciej].particleType() != 0) 
             {
-                const label speciej = thermo_.composition().heavySpeciesIds(j);
-                
-                const volScalarField& Xj = thermo_.composition().X(speciej);
-                
-                forAll(tauVTmode_[speciej], mj)
-                {
-                    sumWeightedReciprocalRelaxTimes +=
-                        Xj / tauVTij(moli,speciej); // EDIT
-                }
-            }
-            
-            tauVTmode_[moli][mi] = 
-                (1.0 - tXe.ref())/(sumWeightedReciprocalRelaxTimes + invtSMALL);
+                sumMolarWeightedReciprocalRelaxationTimes += Xj/tauVTij(speciei,speciej);
+            } 
+            else
+            {
+                tmpXe = Xj;
+            }   
+        }
+        
+        tauVT_[speciei] = (1.0-tmpXe) / (sumMolarWeightedReciprocalRelaxationTimes 
+            + dimensionedScalar("SMALL", dimless/dimTime, Foam::SMALL));
+    }
+    
+    
+    /*forAll(solvedVibEqSpecies(), i) // TODO ONGOING WORK
+    {
+        forAll(tauVTmode_[i], mi)
+        {
+          volScalarField tmpRelTime = 0 / tauVTij(0,0);
+          volScalarField tmpXe = 0 * thermo_.composition().X(0);
+          if(speciesThermo_[i].particleType() > 1)
+          {
+              forAll(species(), j)
+              {
+                  const volScalarField& Xj = thermo_.composition().X(j);
+                  forAll(tauVTmode_[j], mj)
+                  {
+                      if(speciesThermo_[j].particleType() > 0)
+                      {
+                          tmpRelTime += Xj / tauVTij(i,j);
+                      } 
+                      else
+                      {
+                          tmpXe = Xj;
+                      } 
+                  }  
+              }
+          }
+          tauVTmode_[i][mi] = (1.0-tmpXe) / (tmpRelTime + dimensionedScalar("SMALL", dimless/dimTime, Foam::SMALL));
         }
     }*/
-}
+} 
 
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
@@ -144,26 +99,26 @@ Foam::LandauTellerVT<ThermoType>::LandauTellerVT
 )
 :
     relaxationTimeModel(thermo, turbulence),
-
+    
     speciesThermo_
     (
         dynamic_cast<const multi2ComponentMixture<ThermoType>&>
             (this->thermo_).speciesData()
     )
-{
-    tauVT_.setSize(molecules().size());
-    //tauVTmode_.setSize(molecules().size()); // ABORTIVE WORK
-
-    forAll(tauVT_, moli)
+{    
+    tauVT_.setSize(solvedVibEqSpecies().size());
+    //tauVTmode_.setSize(species().size()); // TODO ONGOING WORK
+    
+    forAll(tauVT_, speciei)
     {
         tauVT_.set
         (
-            moli,
+            speciei, 
             new volScalarField
             (
                 IOobject
                 (
-                    "tauVT_" + molecules()[moli],
+                    "tauVT_" + solvedVibEqSpecies()[speciei],
                     mesh_.time().timeName(),
                     mesh_,
                     IOobject::NO_READ,
@@ -173,42 +128,39 @@ Foam::LandauTellerVT<ThermoType>::LandauTellerVT
                 dimensionedScalar("tauVT", dimTime, 0.0)
             )
         );
-    }
-
-    /*forAll(tauVTmode_, moli)  // ABORTIVE WORK
+    } 
+    
+    /*forAll(tauVTmode_, speciei)  // TODO ONGOING WORK
     {
         tauVTmode_.set
         (
-            moli,
-            new PtrList<volScalarField>
-            (
-                thermo_.composition().noVibrationalTemp(moli)
-            )
+            speciei,
+            new PtrList<volScalarField>(thermo_.composition().noVibrationalTemp(speciei))
         );
     }
-
-    forAll(tauVTmode_, moli)
+    
+    forAll(tauVTmode_, speciei)
     {
-        forAll(tauVTmode_[moli], vibMode)
-        {
-            tauVTmode_[moli].set
+      forAll(tauVTmode_[speciei], vibMode)
+      {
+        tauVTmode_[speciei].set
+        (
+            vibMode, 
+            new volScalarField
             (
-                vibMode,
-                new volScalarField
+                IOobject
                 (
-                    IOobject
-                    (
-                        "tauVT_" + molecules()[moli] + "." + word(vibMode+1),
-                        mesh_.time().timeName(),
-                        mesh_,
-                        IOobject::NO_READ,
-                        IOobject::NO_WRITE
-                    ),
+                    "tauVT_" + species()[speciei] + "." + word(vibMode+1),
+                    mesh_.time().timeName(),
                     mesh_,
-                    dimensionedScalar("tauVT", dimTime, 0.0)
-                )
-            );
-        }
+                    IOobject::NO_READ,
+                    IOobject::NO_WRITE
+                ),
+                mesh_,
+                dimensionedScalar("tauVT", dimTime, 0.0)
+            )
+        );
+      }
     }*/
 }
 
@@ -218,76 +170,72 @@ Foam::LandauTellerVT<ThermoType>::LandauTellerVT
 template<class ThermoType>
 void Foam::LandauTellerVT<ThermoType>::correct()
 {
-    updateCoefficients();
-
-    const volScalarField& p = thermo_.p();
-    const volScalarField& T = thermo_.T();
-
-    const scalarField& pCells = p.internalField();
-    const scalarField& TCells = T.internalField();
-
-    // Term #6 in Eq. (16)
-    // In: NASA-TM-101528 (Gupta, Yos, Thompson: Feb. 1989)
-    // Document ID: 19890011822
-    // A review of reaction rates and thermodynamic and transport 
-    // properties for the 11-species air model for chemical and thermal
-    // nonequilibrium calculations to 30000 K
+    updateCoefficients(); 
     
-    forAll(molecules(), moli)
-    {
-        const label speciei = thermo_.composition().moleculeIds(moli);
-        
+    const volScalarField& p = thermo_.p();
+    const volScalarField& Tt = thermo_.Tt();
+    
+    const scalarField& pCells = p.internalField();
+    const scalarField& TtCells = Tt.internalField();
+    
+    forAll(solvedVibEqSpecies(), speciei)
+    {  
         const volScalarField& pD = thermo_.composition().pD(speciei);
-        const volScalarField& ev = thermo_.composition().hev(speciei);
-        const volScalarField& tauVT = this->tauVT_[moli];
-        volScalarField& QVT = this->QVT_[moli];
-
+        const volScalarField& ev = thermo_.composition().hevel(speciei);
+        const volScalarField& tauVT = this->tauVT_[speciei];
+        volScalarField& QVT = this->QVT_[speciei];
+        
+        
         const scalarField& pDCells = pD.internalField();
         const scalarField& evCells = ev.internalField();
         const scalarField& tauVTCells = tauVT.internalField();
         scalarField& QVTCells = QVT.primitiveFieldRef();
-
+        
+        // Electrons are not included into the calculation. See private member function above.
         forAll(QVTCells, celli)
-        {
-            const scalar evZCelli =
-                thermo_.composition().HEv
-                (
-                    speciei,
-                    pCells[celli],
-                    TCells[celli]
-                );
-
-            QVTCells[celli] = pDCells[celli] / tauVTCells[celli]
-                *(evZCelli - evCells[celli]);
-        }
-
-        /*forAll(QVTmode_[moli], vibMode) // ABORTIVE WORK
-        {
-            const volScalarField& hvmode =
-                thermo_.composition().hev_mode(speciei, vibMode);
-            const scalarField& hvmodeCells = hvmode.internalField();
-            const scalarField& tauVTmodeCells =
-                this->tauVTmode_[moli][vibMode].internalField();
-            scalarField& QVTmodeCells =
-                this->QVTmode_[moli][vibMode].primitiveFieldRef();
-
-            forAll(QVTmodeCells, celli) 
+        {        
+            const scalar evZCelli = thermo_.composition().HEvel(speciei, pCells[celli], TtCells[celli]);
+            
+            QVTCells[celli] = pDCells[celli]/tauVTCells[celli]*(evZCelli - evCells[celli]);
+        } 
+        
+        forAll(QVT.boundaryField(), patchi)
+        {        
+            const fvPatchScalarField& pp = p.boundaryField()[patchi];
+            const fvPatchScalarField& pTt = Tt.boundaryField()[patchi];
+            const fvPatchScalarField& ppD = pD.boundaryField()[patchi];
+            const fvPatchScalarField& pev = ev.boundaryField()[patchi];
+            const fvPatchScalarField& ptauVT = tauVT.boundaryField()[patchi];
+            
+            fvPatchScalarField& pQVT = QVT.boundaryFieldRef()[patchi];
+            
+            forAll(pQVT, facei)
             {
-                scalar hvZmodeCells =
-                    thermo_.composition().HEv_mode
-                    (
-                        speciei,
-                        vibMode,
-                        pCells[celli],
-                        TCells[celli]
-                    );
-                    
-                QVTmodeCells[celli] = pDCells[celli] / tauVTmodeCells[celli]
-                    *(hvZmodeCells - hvmodeCells[celli]);
+                const scalar pevZFacei = thermo_.composition().HEvel(speciei, pp[facei], pTt[facei]);
+                
+                pQVT[facei] = ppD[facei]/ptauVT[facei]*(pevZFacei - pev[facei]);
             }
-        }*/
-    }
-}
+        }
+        
+        /*forAll(QVTmode_[speciei], vibMode) // TODO ONGOING WORK
+        {
+            const volScalarField& hvmode = thermo_.composition().hevel_mode(speciei, vibMode);
+            const scalarField& hvmodeCells = hvmode.internalField();
+            const scalarField& tauVTmodeCells = this->tauVTmode_[speciei][vibMode].internalField();
+            scalarField& QVTmodeCells = this->QVTmode_[speciei][vibMode].primitiveFieldRef();
+            
+            forAll(QVTmodeCells, celli) // electrons are not included into the calculations. See private member function above.
+            {        
+                scalar hvZmodeCells = thermo_.composition().HEvel_mode(speciei, vibMode, pCells[celli], TtCells[celli]);
+                QVTmodeCells[celli] = 1.0/(tauVTmodeCells[celli])*pDCells[celli]*(hvZmodeCells-hvmodeCells[celli]); 
+            }   
+        }
+        
+        + boundary field
+        
+        */
+    }    
+} 
 
 
 template<class ThermoType>
@@ -302,6 +250,6 @@ bool Foam::LandauTellerVT<ThermoType>::read()
         return false;
     }
 }
-
+   
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

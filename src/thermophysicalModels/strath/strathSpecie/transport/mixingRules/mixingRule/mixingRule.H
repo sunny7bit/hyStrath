@@ -2,16 +2,16 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright held by original author
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
-    OpenFOAM is free software: you can redistribute it and/or modify it
-    under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+    OpenFOAM is free software; you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the
+    Free Software Foundation; either version 2 of the License, or (at your
+    option) any later version.
 
     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -19,7 +19,8 @@ License
     for more details.
 
     You should have received a copy of the GNU General Public License
-    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+    along with OpenFOAM; if not, write to the Free Software Foundation,
+    Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
 Class
     Foam::mixingRule
@@ -46,18 +47,18 @@ SourceFiles
 
 namespace Foam
 {
-
+  
 /*---------------------------------------------------------------------------*\
-                         Class mixingRule Declaration
+                    Class mixingRule Declaration
 \*---------------------------------------------------------------------------*/
 
 class mixingRule
 :
     public IOdictionary
 {
-
-protected:
-
+    
+protected:  
+  
     // Protected data
 
         //- Mesh
@@ -72,34 +73,31 @@ protected:
         //- Viscosity [kg/m/s]
         PtrList<volScalarField> spmu_;
         
-/*        PtrList<volScalarField> spCptr_;*/
-/*        PtrList<volScalarField> spCvvel_;*/
-
-        //- Thermal conductivity, trans-rotational energy mode [W/mK]
+        //- Thermal conductivity, trans-rotational mode [W/mK]
         PtrList<volScalarField> spkappatr_;
-
-        //- Thermal conductivity, vibro-electronic energy mode [W/mK]
+        
+        //- Thermal conductivity, vib-electronic mode [W/mK]
         PtrList<volScalarField> spkappave_;
-
-        //- Thermal diffusivity, trans-rotational energy mode [kg/ms]
+        
+        //- Thermal diffusivity, trans-rotational mode [kg/ms], also called kappatrTilda
         PtrList<volScalarField> spalphatr_;
-
-        //- Thermal diffusivity, vibro-eletronic energy mode [kg/ms]
+        
+        //- Thermal diffusivity, vib-eletronic mode [kg/ms], also called kappaveTilda
         PtrList<volScalarField> spalphave_;
-
-        //- Write the species/mixture viscosity?
+        
+        //- Write the viscosity species/mixture?
         const bool writeMuSpecies_;
         const bool writeMuMixture_;
-
-        //- Write the species/mixture thermal diffusivity?
+        
+        //- Write the thermal diffusivity species/mixture?
         const bool writeKappaSpecies_;
         const bool writeKappaMixture_;
 
 
 private:
-
+  
     // Private member functions
-
+      
         //- Disallow copy construct
         mixingRule(const mixingRule&);
 
@@ -108,13 +106,13 @@ private:
 
 
 public:
-
+ 
     //- Runtime type information
     TypeName("mixingRule");
 
-
+      
     // Declare run-time constructor selection table
-
+       
 #ifndef SWIG
     declareRunTimeSelectionTable
     (
@@ -128,9 +126,9 @@ public:
         (thermo, turbulence)
     );
 #endif
+ 
 
-
-    // Constructors
+    // Constructors	  
 
         //- Construct from components
         mixingRule
@@ -140,8 +138,8 @@ public:
         );
 
 
-    // Selectors
-
+    // Selectors	  
+  
         //- Return a reference to the selected mixing rule transport model
         static autoPtr<mixingRule> New
         (
@@ -158,83 +156,51 @@ public:
 
     // Member Functions
 
-        // Access
-
+        // Access   
+           
             //- Return the const viscosity field for species i
             inline const volScalarField& mu(label i) const;
-
-            //- Return the const trans-rotational thermal conductivity field
-            //  for a given species
+            
+            //- Return the const trans-rot thermal conductivity field for species i
             inline const volScalarField& kappatr(label i) const;
-
-            //- Return the const vibro-electronic thermal conductivity field
-            //  for a given species
+            
+            //- Return the const vib-elec thermal conductivity field for species i
             inline const volScalarField& kappave(label i) const;
-
-            //- Return the const trans-rotational thermal conductivity field
-            //  for the mixture
+            
+            //- Return the const trans-rot thermal conductivity field for the mixture
             inline volScalarField& kappatr() const;
-
-            //- Return the const vibro-electronic thermal conductivity field
-            //  for the mixture
+            
+            //- Return the const vib-elec thermal conductivity field for the mixture
             inline volScalarField& kappave() const;
-
-            //- Return the const trans-rotational thermal diffusivity field
-            //  for a given species
+            
+            //- Return the const trans-rot thermal diffusivity field for species i
             inline const volScalarField& alphatr(label i) const;
-
-            //- Return the const vibro-electronic thermal diffusivity field
-            //  for a given species
+            
+            //- Return the const vib-elec thermal diffusivity field for species i
             inline const volScalarField& alphave(label i) const;
-
-            //- Return the const trans-rotational thermal diffusivity field
-            //  for the mixture
+            
+            //- Return the const trans-rot thermal diffusivity field for the mixture
             inline volScalarField& alphatr() const;
-
-            //- Return the const vibro-electronic thermal diffusivity field
-            //  for the mixture
+            
+            //- Return the const vib-elec thermal diffusivity field for the mixture
             inline volScalarField& alphave() const;
-
+                        
             //- Return the table of species
             inline const speciesTable& species() const;
-
+            
             //- Return the table of species having a vib. eq. being solved
             inline const speciesTable& solvedVibEqSpecies() const;
 
-
+       
         //- Molecular weight for a specie given by index
         virtual inline scalar W(const label i) const = 0;
-
-        //- Viscosity for a specie given by index
-        virtual inline scalar mu
-        (
-            const label i,
-            const scalar p,
-            const scalar T
-        ) const = 0;
         
-        //- Thermal conductivity [W/mK], for a specie given by index
-        //  trans-rotational energy mode
-        virtual inline scalar kappatr
-        (
-            const label i,
-            const scalar p,
-            const scalar T
-        ) const = 0;
-
-        //- Thermal conductivity [W/mK], for a specie given by index
-        //  vibro-electronic energy mode
-        virtual inline scalar kappave
-        (
-            const label i,
-            const scalar p,
-            const scalar T,
-            const scalar Tve
-        ) const = 0;
-
+        //- Viscosity for a specie given by index
+        virtual inline scalar mu(const label i, const scalar p, const scalar Tt) const = 0;
+            
         //- Calculations and updates the different fields
         virtual void correct() = 0;
-
+        
         //- Write the user-defined rarefied quantities
         virtual void write() = 0;
 

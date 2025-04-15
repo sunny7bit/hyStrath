@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2012 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -25,8 +25,7 @@ Class
     Foam::nonEqSmoluchowskiJumpTvMixFvPatchScalarField
 
 Description
-    Smoluchowski temperature jump boundary condition, vibro-electronic energy
-    equation (single vibrational energy pool)
+    Smoluchowski temperature jump boundary condition
 
 SourceFiles
     nonEqSmoluchowskiJumpTvMixFvPatchScalarField.C
@@ -56,7 +55,7 @@ class nonEqSmoluchowskiJumpTvMixFvPatchScalarField
 
         //- Name of the species
         word specieName_;
-
+        
         //- Velocity field name, default = "U"
         word UName_;
 
@@ -65,13 +64,13 @@ class nonEqSmoluchowskiJumpTvMixFvPatchScalarField
 
         //- Dynamic viscosity field name, default = "mu"
         word muName_;
-
+        
         //- Thermal diffusivity field name, default = "alphave"
         word alphaName_;
-
-        //- Ratio of specific heat capacities field name, default = "gamma"
-        word gammaName_;
-
+        
+        //- Ratio of specific heat capacities field name, default = "gammatr"
+        word gammatrName_;
+        
         //- Mean free path field name, default = "mfp"
         word mfpName_;
 
@@ -104,8 +103,8 @@ public:
             const dictionary&
         );
 
-        //- Construct by mapping given
-        //  nonEqSmoluchowskiJumpTvMixFvPatchScalarField onto a new patch
+        //- Construct by mapping given nonEqSmoluchowskiJumpTvMixFvPatchScalarField
+        //  onto a new patch
         nonEqSmoluchowskiJumpTvMixFvPatchScalarField
         (
             const nonEqSmoluchowskiJumpTvMixFvPatchScalarField&,

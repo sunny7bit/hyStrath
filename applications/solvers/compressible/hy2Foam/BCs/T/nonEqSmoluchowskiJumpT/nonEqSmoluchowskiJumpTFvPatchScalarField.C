@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2013 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -31,8 +31,7 @@ License
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::nonEqSmoluchowskiJumpTFvPatchScalarField::
-nonEqSmoluchowskiJumpTFvPatchScalarField
+Foam::nonEqSmoluchowskiJumpTFvPatchScalarField::nonEqSmoluchowskiJumpTFvPatchScalarField
 (
     const fvPatch& p,
     const DimensionedField<scalar, volMesh>& iF
@@ -41,12 +40,14 @@ nonEqSmoluchowskiJumpTFvPatchScalarField
     mixedFvPatchScalarField(p, iF),
     UName_("U"),
     rhoName_("rho"),
+    //psiName_("thermo:psi"),
     muName_("mu"),
-    alphaName_("alpha"),
-    gammaName_("gammatr"),
-    mfpName_("mfp"),
+    alphaName_("alphatr"), // NEW VINCENT 03/03/2016
+    gammatrName_("gammatr"), // NEW VINCENT 03/03/2016
+    mfpName_("mfp"), // NEW VINCENT 28/02/2016
     accommodationCoeff_(1.0),
-    Twall_(p.size(), 0.0)
+    Twall_(p.size(), 0.0)/*,
+    gamma_(1.4)*/
 {
     refValue() = 0.0;
     refGrad() = 0.0;
@@ -54,8 +55,7 @@ nonEqSmoluchowskiJumpTFvPatchScalarField
 }
 
 
-Foam::nonEqSmoluchowskiJumpTFvPatchScalarField::
-nonEqSmoluchowskiJumpTFvPatchScalarField
+Foam::nonEqSmoluchowskiJumpTFvPatchScalarField::nonEqSmoluchowskiJumpTFvPatchScalarField
 (
     const nonEqSmoluchowskiJumpTFvPatchScalarField& ptf,
     const fvPatch& p,
@@ -66,17 +66,18 @@ nonEqSmoluchowskiJumpTFvPatchScalarField
     mixedFvPatchScalarField(ptf, p, iF, mapper),
     UName_(ptf.UName_),
     rhoName_(ptf.rhoName_),
+    //psiName_(ptf.psiName_),
     muName_(ptf.muName_),
-    alphaName_(ptf.alphaName_),
-    gammaName_(ptf.gammaName_),
-    mfpName_(ptf.mfpName_),
+    alphaName_(ptf.alphaName_), // NEW VINCENT 03/03/2016
+    gammatrName_(ptf.gammatrName_), // NEW VINCENT 03/03/2016
+    mfpName_(ptf.mfpName_), // NEW VINCENT 28/02/2016
     accommodationCoeff_(ptf.accommodationCoeff_),
-    Twall_(ptf.Twall_)
+    Twall_(ptf.Twall_)/*,
+    gamma_(ptf.gamma_)*/
 {}
 
 
-Foam::nonEqSmoluchowskiJumpTFvPatchScalarField::
-nonEqSmoluchowskiJumpTFvPatchScalarField
+Foam::nonEqSmoluchowskiJumpTFvPatchScalarField::nonEqSmoluchowskiJumpTFvPatchScalarField
 (
     const fvPatch& p,
     const DimensionedField<scalar, volMesh>& iF,
@@ -86,17 +87,19 @@ nonEqSmoluchowskiJumpTFvPatchScalarField
     mixedFvPatchScalarField(p, iF),
     UName_(dict.lookupOrDefault<word>("U", "U")),
     rhoName_(dict.lookupOrDefault<word>("rho", "rho")),
+    //psiName_(dict.lookupOrDefault<word>("psi", "thermo:psi")),
     muName_(dict.lookupOrDefault<word>("mu", "mu")),
-    alphaName_(dict.lookupOrDefault<word>("alpha", "alpha")),
-    gammaName_(dict.lookupOrDefault<word>("gammatr", "gammatr")),
-    mfpName_(dict.lookupOrDefault<word>("mfp", "mfp")),
+    alphaName_(dict.lookupOrDefault<word>("alphatr", "alphatr")), // NEW VINCENT 03/03/2016
+    gammatrName_(dict.lookupOrDefault<word>("gammatr", "gammatr")), // NEW VINCENT 03/03/2016
+    mfpName_(dict.lookupOrDefault<word>("mfp", "mfp")), // NEW VINCENT 28/02/2016
     accommodationCoeff_(readScalar(dict.lookup("accommodationCoeff"))),
-    Twall_("Twall", dict, p.size())
+    Twall_("Twall", dict, p.size())/*,
+    gamma_(dict.lookupOrDefault<scalar>("gamma", 1.4))*/
 {
     if
     (
         mag(accommodationCoeff_) < SMALL
-     || mag(accommodationCoeff_) > 1.0
+     || mag(accommodationCoeff_) > 2.0
     )
     {
         FatalIOErrorIn
@@ -132,8 +135,7 @@ nonEqSmoluchowskiJumpTFvPatchScalarField
 }
 
 
-Foam::nonEqSmoluchowskiJumpTFvPatchScalarField::
-nonEqSmoluchowskiJumpTFvPatchScalarField
+Foam::nonEqSmoluchowskiJumpTFvPatchScalarField::nonEqSmoluchowskiJumpTFvPatchScalarField
 (
     const nonEqSmoluchowskiJumpTFvPatchScalarField& ptpsf,
     const DimensionedField<scalar, volMesh>& iF
@@ -141,7 +143,8 @@ nonEqSmoluchowskiJumpTFvPatchScalarField
 :
     mixedFvPatchScalarField(ptpsf, iF),
     accommodationCoeff_(ptpsf.accommodationCoeff_),
-    Twall_(ptpsf.Twall_)
+    Twall_(ptpsf.Twall_)/*,
+    gamma_(ptpsf.gamma_)*/
 {}
 
 
@@ -179,24 +182,48 @@ void Foam::nonEqSmoluchowskiJumpTFvPatchScalarField::updateCoeffs()
     const fvPatchScalarField& pmu =
         patch().lookupPatchField<volScalarField, scalar>(muName_);
     const fvPatchScalarField& palpha =
-        patch().lookupPatchField<volScalarField, scalar>(alphaName_);
-    const fvPatchScalarField& pgamma =
-        patch().lookupPatchField<volScalarField, scalar>(gammaName_);
+        patch().lookupPatchField<volScalarField, scalar>(alphaName_); // NEW VINCENT 03/03/2016
+    const fvPatchScalarField& pgammatr =
+        patch().lookupPatchField<volScalarField, scalar>(gammatrName_); // NEW VINCENT 03/03/2016     
     const fvPatchScalarField& pmfp =
-        patch().lookupPatchField<volScalarField, scalar>(mfpName_);
+        patch().lookupPatchField<volScalarField, scalar>(mfpName_); // NEW VINCENT 28/02/2016           
     const fvPatchScalarField& prho =
         patch().lookupPatchField<volScalarField, scalar>(rhoName_);
+    /*const fvPatchField<scalar>& ppsi =
+        patch().lookupPatchField<volScalarField, scalar>(psiName_);*/
     const fvPatchVectorField& pU =
         patch().lookupPatchField<volVectorField, vector>(UName_);
-        
-    scalarField C2
-    (
-        pmfp*2.0*pgamma/(pgamma + 1.0)/(pmu/palpha)
-      * (2.0 - accommodationCoeff_)/accommodationCoeff_
-    );
 
-//    scalarField aCoeff(prho.snGrad() - prho/C2);
-//    scalarField KEbyRho(0.5*magSqr(pU));
+    // Prandtl number reading DELETION VINCENT 03/03/2016
+    /*const dictionary& thermophysicalProperties =
+        db().lookupObject<IOdictionary>("thermophysicalProperties");
+
+    dimensionedScalar Pr
+    (
+        "Pr",
+        dimless,
+        thermophysicalProperties.subDict("mixture").subDict("transport")
+        .lookup("Pr")
+    );*/
+    
+    // DELETION VINCENT 28/02/2016 ********************************************
+    /*Field<scalar> C2
+    (
+        pmu/prho
+        *sqrt(ppsi*constant::mathematical::piByTwo)
+        *2.0*gamma_/Pr.value()/(gamma_ + 1.0)
+        *(2.0 - accommodationCoeff_)/accommodationCoeff_
+    );*/
+    // END DELETION VINCENT 28/02/2016 ****************************************
+    
+    Field<scalar> C2
+    (
+        pmfp*2.0/(pgammatr + 1.0)/(pmu/palpha) // Pr = mu*Cp/k = mu/alpha * Cp/Cv = mu/alpha * gamma
+        *(2.0 - accommodationCoeff_)/accommodationCoeff_
+    ); // NEW VINCENT 03/03/2016
+
+    Field<scalar> aCoeff(prho.snGrad() - prho/C2);
+    Field<scalar> KEbyRho(0.5*magSqr(pU));
 
     valueFraction() = (1.0/(1.0 + patch().deltaCoeffs()*C2));
     refValue() = Twall_;
@@ -213,14 +240,17 @@ void Foam::nonEqSmoluchowskiJumpTFvPatchScalarField::write(Ostream& os) const
 
     writeEntryIfDifferent<word>(os, "U", "U", UName_);
     writeEntryIfDifferent<word>(os, "rho", "rho", rhoName_);
+    //writeEntryIfDifferent<word>(os, "psi", "thermo:psi", psiName_);
     writeEntryIfDifferent<word>(os, "mu", "mu", muName_);
-    writeEntryIfDifferent<word>(os, "alpha", "alpha", alphaName_);
-    writeEntryIfDifferent<word>(os, "gammatr", "gammatr", gammaName_);
-    writeEntryIfDifferent<word>(os, "mfp", "mfp", mfpName_);
+    writeEntryIfDifferent<word>(os, "alphatr", "alphatr", alphaName_); // NEW VINCENT 03/03/2016
+    writeEntryIfDifferent<word>(os, "gammatr", "gammatr", gammatrName_); // NEW VINCENT 03/03/2016
+    writeEntryIfDifferent<word>(os, "mfp", "mfp", mfpName_); // NEW VINCENT 28/02/2016
 
     os.writeKeyword("accommodationCoeff")
         << accommodationCoeff_ << token::END_STATEMENT << nl;
     Twall_.writeEntry("Twall", os);
+    /*os.writeKeyword("gamma")
+        << gamma_ << token::END_STATEMENT << nl;*/
     writeEntry("value", os);
 }
 

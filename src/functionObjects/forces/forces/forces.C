@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
-     \\/     M anipulation  |
+    \\  /    A nd           | Copyright (C) 2011-2016 OpenFOAM Foundation
+     \\/     M anipulation  | Copyright (C) 2015-2016 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -438,7 +438,7 @@ Foam::tmp<Foam::volScalarField> Foam::functionObjects::forces::rho() const
     {
         return(lookupObject<volScalarField>(rhoName_));
     }*/
-
+    
     return(lookupObject<volScalarField>("rho")); // NEW VINCENT: compressible cases with forceCoeff active
 }
 

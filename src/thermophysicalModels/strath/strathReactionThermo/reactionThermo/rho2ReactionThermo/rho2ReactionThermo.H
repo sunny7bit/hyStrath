@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2012 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -29,7 +29,6 @@ Description
 
 SourceFiles
     rho2ReactionThermo.C
-    rho2ReactionThermoI.H
 
 \*---------------------------------------------------------------------------*/
 
@@ -60,112 +59,51 @@ class rho2ReactionThermo
 protected:
 
     // Protected data
-
+      
         //- Partial name of the thermo
         word partialThermoName_;
-
+        
         //- Temperature limits of applicability of functions (for all species)
         scalar Tlow_, Thigh_;
-
+        
         //- Minimum and maximum temperatures tolerated at patches
         scalar TlowPatches_, ThighPatches_;
-
+        
         //- Maximum velocity tolerated at patches (magnitude for each component)
         scalar UhighPatches_;
-
+        
 
     // Private Member Functions
-
-        //- Translates the transport model name into the typedef name of the
-        //  partial thermo
+        
+        //- Translates the transport model name into the typedef name of the partial thermo
         word transportToTypedef(const word transportModel);
-
-        //- Determines the temperature from an energy field F, its derivate dF,
-        //  and the species mass fractions, using the Newton-Raphson's method
-        inline scalar Temperature_NewtonRaphson
+        
+        //- Determines the temperature from an energy field F, its derivate dF, and the mass fractions YList
+        inline scalar Temperature
         (
             scalar f,
             scalar p,
             scalar T0,
             const PtrList<scalar>& YList,
-            scalar (Foam::basic2MultiComponentMixture::*F)
-            (
-                const label,
-                const scalar,
-                const scalar
-            ) const,
-            scalar (Foam::basic2MultiComponentMixture::*dFdT)
-            (
-                const label,
-                const scalar,
-                const scalar
-            ) const,
+            scalar (Foam::basic2MultiComponentMixture::*F)(const label, const scalar, const scalar) const,
+            scalar (Foam::basic2MultiComponentMixture::*dFdT)(const label, const scalar, const scalar) const,
             scalar (Foam::rho2ReactionThermo::*limit)(const scalar) const
         );
         
-        //- Determines the temperature from an energy field F and the species
-        //  mass fractions, using the secant method
-        inline scalar Temperature_Secant
-        (
-            scalar f,
-            scalar p,
-            scalar T0,
-            const scalar Tt,
-            const PtrList<scalar>& YList,
-            scalar (Foam::basic2MultiComponentMixture::*F)
-            (
-                const label,
-                const scalar,
-                const scalar
-            ) const,
-            scalar (Foam::rho2ReactionThermo::*limit)(const scalar) const
-        );
-
-        //- Determines the temperature from an energy field F, its derivate dF
-        //  for a given specie i, using the Newton-Raphson's method
+        //- Determines the temperature from an energy field F, its derivate dF for a given specie i
         inline scalar Temperature
         (
             label i,
             scalar f,
             scalar p,
             scalar T0,
-            scalar (Foam::basic2MultiComponentMixture::*F)
-            (
-                const label,
-                const scalar,
-                const scalar
-            ) const,
-            scalar (Foam::basic2MultiComponentMixture::*dFdT)
-            (
-                const label,
-                const scalar,
-                const scalar
-            ) const,
+            scalar (Foam::basic2MultiComponentMixture::*F)(const label, const scalar, const scalar) const,
+            scalar (Foam::basic2MultiComponentMixture::*dFdT)(const label, const scalar, const scalar) const,
             scalar (Foam::rho2ReactionThermo::*limit)(const scalar) const
         );
-
+        
         //- Overall temperature calculation for the single-temperature model
-        inline scalar TEs
-        (
-            const scalar e,
-            const scalar p,
-            const scalar T0,
-            const PtrList<scalar>& YList
-        );
-
-        //- Trans-rotational temperature calculation for the two-temperature
-        //  model
-        inline scalar TtEts
-        (
-            const scalar e,
-            const scalar p,
-            const scalar T0,
-            const PtrList<scalar>& YList
-        );
-
-        //- Single-vibrational temperature calculation for the two-temperature
-        //  model
-        inline scalar TvelEvels
+        inline scalar TEs // NEW VINCENT 16/06/2016
         (
             const scalar e,
             const scalar p,
@@ -173,34 +111,39 @@ protected:
             const PtrList<scalar>& YList
         );
         
-        inline scalar TvelEvels
+        //- Trans-rotational temperature calculation for the two-temperature model
+        inline scalar TtEts // NEW VINCENT 17/06/2016
         (
             const scalar e,
             const scalar p,
             const scalar T0,
-            const scalar Tt,
             const PtrList<scalar>& YList
         );
-
-        //- Multi-vibrational temperature calculation for the two-temperature
-        //  model
-        inline scalar TvelEvels
+        
+        //- Single-vibrational temperature calculation for the two-temperature model
+        inline scalar TvelEvels // NEW VINCENT 17/06/2016
+        (
+            const scalar e,
+            const scalar p,
+            const scalar T0,
+            const PtrList<scalar>& YList
+        );
+        
+        //- Multi-vibrational temperature calculation for the two-temperature model
+        inline scalar TvelEvels // NEW VINCENT 19/08/2016
         (
             const label i,
             const scalar e,
             const scalar p,
             const scalar T0
         );
-
+        
         //- Limit the temperature to be in the range Tlow_ to Thigh_
         inline scalar limit(const scalar T) const;
-
-        //- Calculate chemistry fractions in the volume
-        void correctVolChemFractions();
         
-        //- Calculate chemistry fractions on boundary patches
-        void correctBdrChemFractions();
-
+        //- Calculate the chemistry fractions
+        void correctChemFractions();
+        
         //- Calculate the fields from DSMC inputs
         void calculateFromDSMC
         (
@@ -210,48 +153,49 @@ protected:
             const volScalarField& fixedRho,
             const word& regionName
         );
-
+        
         //- Calculate the thermo variables
         void calculate();
-
+        
         //- Minimal calculation of the thermo variables
         void calculateLight();
-
-        //- Calculate hevk energies of non-molecule particles only for the 
-        //  multi-vibrational hy2Foam
-        //  Calculate hevk energies of all particles for the single-vibrational
-        //  variant of hy2Foam
+        
+        //- Calculate hevk energies of non-molecule particles only for the multi-vibrational hy2Foam
+        //- Calculate hevk energies of all particles for the single-vibrational version of hy2Foam
         void calculateHEVK();
-
+        
         //- Initialise the fields
         void initialise();
+        
+        //- Minimal initialisation of the fields
+        void initialiseLight();
 
 public:
 
     //- Public constant
-
+     
         //- Vibrational cut-off temperature
         static const scalar vibrationalCutOffTemp;
-
+        
         //- Minimum Y value required for an evEqn to be solved locally
         static const scalar miniYforSolvingEvEqn;
-
+        
         //- Is there at least one cell for which the temperature is not
         //  within [Tlow, Thigh]?
         static bool temperatureFieldOutOfRange;
-
+        
         //- Prevent the job from crashing and reset the temperature to Tlow_
-        //  Increase the stability but need extra caution
+        //  Increase the stability but need extra caution 
         static bool hasCrashedButRecovered;
-
+        
         //- Number of cells for which the temperature is not
         //  within [Tlow, Thigh]
         static label noCellsWithTemperatureFieldOutOfRange;
-
+        
         //- Min and max values taken by the temperature before bounding
         static FixedList<scalar, 2> minMaxTemperatureFieldOutOfRange;
-
-
+        
+        
     //- Runtime type information
     TypeName("rho2ReactionThermo");
 
@@ -293,13 +237,9 @@ public:
 
     // Member functions
 
-        //- Constant access to the ptach field values for energy boundary
-        //  calculations
-        static const rho2ReactionThermo& lookup2ReactionThermo
-        (
-            const fvPatchScalarField& pf
-        );
-
+        //- Constant access to the ptach field values for energy boundary calculations
+        static const rho2ReactionThermo& lookup2ReactionThermo(const fvPatchScalarField& pf);
+        
         //- Reset temperature bounding info
         void resetTemperatureBoundingInfo()
         {
@@ -308,73 +248,66 @@ public:
             minMaxTemperatureFieldOutOfRange[0] = Tlow_;
             minMaxTemperatureFieldOutOfRange[1] = Thigh_;
         }
-
+        
         //- Reset temperature bounding info
         void temperatureBoundingReport()
         {
             //- Parallel communication
-            if (Pstream::parRun())
+            if(Pstream::parRun())
             {
                 reduce(temperatureFieldOutOfRange, sumOp<bool>());
                 reduce(minMaxTemperatureFieldOutOfRange[0], sumOp<scalar>());
                 reduce(minMaxTemperatureFieldOutOfRange[1], sumOp<scalar>());
                 reduce(noCellsWithTemperatureFieldOutOfRange, sumOp<scalar>());
             }
-
-            if (temperatureFieldOutOfRange)
+            
+            if(temperatureFieldOutOfRange)
             {
                 bool printedHeader = false;
-
-                if (minMaxTemperatureFieldOutOfRange[0] < Tlow_ - Foam::SMALL)
+                
+                if(minMaxTemperatureFieldOutOfRange[0] < Tlow_ - Foam::SMALL)
                 {
-                    Info<< "\e[1;31mAttempt to use rho2ReactionThermo out of "
-                        << "temperature range "
-                        << Foam::rho2ReactionThermo::
-                              noCellsWithTemperatureFieldOutOfRange
-                        << " times during this iteration.\n" << tab 
-                        << minMaxTemperatureFieldOutOfRange[0]
+                    Info<< "\e[1;31mAttempt to use rho2ReactionThermo out of temperature range " 
+                        << Foam::rho2ReactionThermo::noCellsWithTemperatureFieldOutOfRange
+                        << " times during this iteration.\n" << tab << minMaxTemperatureFieldOutOfRange[0] 
                         << " < Tlow: " << Tlow_ << "\e[0m" << nl;
                     printedHeader = true;
                 }
-
-                if (minMaxTemperatureFieldOutOfRange[1] > Thigh_ + Foam::SMALL)
+                
+                if(minMaxTemperatureFieldOutOfRange[1] > Thigh_ + Foam::SMALL)
                 {
-                    if (not printedHeader)
+                    if(not printedHeader) 
                     {
-                        Info<< "\e[1;31mAttempt to use rho2ReactionThermo out "
-                            << "of temperature range "
-                            << Foam::rho2ReactionThermo::
-                                  noCellsWithTemperatureFieldOutOfRange
+                        Info<< "\e[1;31mAttempt to use rho2ReactionThermo out of temperature range " 
+                            << Foam::rho2ReactionThermo::noCellsWithTemperatureFieldOutOfRange
                             << " times during this iteration.\n" << tab;
                     }
-                    
-                    Info<< "\e[1;31m" << tab << "Thigh: " << Thigh_ << " < "
-                        << minMaxTemperatureFieldOutOfRange[1]
+                    Info<< "\e[1;31m" << tab << "Thigh: " << Thigh_ << " < " << minMaxTemperatureFieldOutOfRange[1] 
                         << "\e[0m" << endl;
                 }
             }
         }
-
+        
         //- Return info about hasCrashedButRecovered bool
         static void hasCrashedButRecoveredReport()
         {
             //- Parallel communication
-            if (Pstream::parRun())
+            if(Pstream::parRun())
             {
                 reduce(hasCrashedButRecovered, sumOp<bool>());
             }
-
-            if (hasCrashedButRecovered)
+            
+            if(hasCrashedButRecovered)
             {
                 Info<< "\e[1;31mThe simulation should have crashed, extra"
-                    << "caution is required while analysing the results"
+                    << "caution is required while analysing the results" 
                     << "\e[0m" << endl;
             }
         }
-
+        
         //- Return the partial name of the thermo package that has been loaded
         word partialThermoName();
-
+        
         //- Return the composition of the multi-component mixture
         virtual basic2MultiComponentMixture& composition() = 0;
 
@@ -390,36 +323,31 @@ public:
             const volScalarField& fixedRho,
             const word& regionName
         );
-
+        
         //- Update properties
         virtual void correct2T();
-
+        
         //- Minimal properties update
         virtual void correct2T_Light();
-
-        //- Update hevk energies of non-molecule particles only for the
-        //  multi-vibrational hy2Foam
-        //  Update hevk energies of all particles for the single-vibrational
-        //  variant of hy2Foam
-        virtual void correctHEVK();
-
-        //- Limit the velocity field at wall patches
-        virtual void limitVelocityAtWallBoundary
-        (
-            volVectorField::Boundary& Ubdry
-        );
-
-        //- Update chemistry fractions in the volume
-        virtual void correctVolFractions();
         
-        //- Update chemistry fractions on boundary patches
-        virtual void correctBdrFractions();
-
+        //- Update hevk energies of non-molecule particles only for the multi-vibrational hy2Foam
+        //- Update hevk energies of all particles for the single-vibrational version of hy2Foam
+        virtual void correctHEVK();
+        
+        //- Limit the velocity field at wall patches
+        virtual void limitVelocityAtWallBoundary(volVectorField::Boundary& Ubdry);
+        
+        //- Update chemistry fractions only
+        virtual void correctFractions();
+        
         //- Update the overall temperature
         virtual void correctOverallTemperature();
-
+        
         //- Initialise the 2T model
         virtual void initialise2T();
+        
+        //- Initialise the 2T model (light)
+        virtual void initialise2T_Light();
 };
 
 

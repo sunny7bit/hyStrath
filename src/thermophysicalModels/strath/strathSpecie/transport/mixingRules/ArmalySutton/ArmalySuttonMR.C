@@ -2,16 +2,16 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright held by original author
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
-    OpenFOAM is free software: you can redistribute it and/or modify it
-    under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+    OpenFOAM is free software; you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the
+    Free Software Foundation; either version 2 of the License, or (at your
+    option) any later version.
 
     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -19,92 +19,84 @@ License
     for more details.
 
     You should have received a copy of the GNU General Public License
-    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+    along with OpenFOAM; if not, write to the Free Software Foundation,
+    Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
 \*---------------------------------------------------------------------------*/
 
 #include "ArmalySuttonMR.H"
+#include "fvm.H"
 
 // * * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * //
 
 template<class ThermoType>
 void Foam::ArmalySuttonMR<ThermoType>::updatePhi()
-{
+{     
+    const volScalarField& Tt = thermo_.Tt();
     const volScalarField& p = thermo_.p();
-    const volScalarField& T = thermo_.T();
+    const scalarField& TtCells = Tt.internalField();
     const scalarField& pCells = p.internalField();
-    const scalarField& TCells = T.internalField();
 
     forAll(species(), speciei)
-    {
+    { 
         const volScalarField& Xi = thermo_.composition().X(speciei);
         const scalarField& XiCells = Xi.internalField();
-
+        
         volScalarField& phi = phi_[speciei];
         scalarField& phiCells = phi.primitiveFieldRef();
-
+        
         phiCells = XiCells;
-
-        forAll(T.boundaryField(), patchi)
+        
+        forAll(Tt.boundaryField(), patchi)
         {
             phi.boundaryFieldRef()[patchi] = Xi.boundaryField()[patchi];
         }
 
         forAll(species(), speciej)
         {
-            if (speciej != speciei)
+            if(speciej != speciei)
             {
                 const volScalarField& Xj = thermo_.composition().X(speciej);
                 const scalarField& XjCells = Xj.internalField();
-
+                   
                 forAll(phiCells, celli)
-                {
-                    if (miniXs_ < XjCells[celli])
+                {  
+                    if(miniXs_ < XjCells[celli])
                     {
-                        phiCells[celli] += XjCells[celli]
-                          * sqr
-                            (
-                                Fij(speciei,speciej) + Bij(speciei, speciej)
-                              * sqrt(mu(speciei, pCells[celli], TCells[celli])
-                              / mu(speciej, pCells[celli], TCells[celli]))
-                              * pow025(W(speciej)/W(speciei))
-                            )
-                          / sqrt(8.0*(1.0 + W(speciei)/W(speciej)))
-                          / (1.0 + W(speciej)/W(speciei))
-                          * (
-                                5.0/(3.0*AijZ(speciei, speciej))
-                            + W(speciej)/W(speciei)
-                            );
+                        phiCells[celli] += XjCells[celli]*sqr
+                        (
+                            Fij(speciei,speciej) + Bij(speciei, speciej)
+                          * sqrt(mu(speciei, pCells[celli], TtCells[celli])/mu(speciej, pCells[celli], TtCells[celli]))
+                          * pow025(W(speciej)/W(speciei))
+                        ) 
+                         / sqrt(8.0*(1.0 + W(speciei)/W(speciej))) 
+                         / (1.0 + W(speciej)/W(speciei))
+                         * (5.0/(3.0*AijZ(speciei, speciej)) + W(speciej)/W(speciei));
                      }
-                }
-
-                forAll(T.boundaryField(), patchi)
-                {
+                }//end cells loop
+                
+                forAll(Tt.boundaryField(), patchi)
+                { 
                     const fvPatchScalarField& pXj = Xj.boundaryField()[patchi];
                     const fvPatchScalarField& pp = p.boundaryField()[patchi];
-                    const fvPatchScalarField& pT = T.boundaryField()[patchi];
+                    const fvPatchScalarField& pTt = Tt.boundaryField()[patchi];
                     fvPatchScalarField& pphi = phi.boundaryFieldRef()[patchi];
-
-                    forAll(pT, facei)
+                    
+                    forAll(pTt, facei)
                     {
-                        if (miniXs_ < pXj[facei])
+                        if(miniXs_ < pXj[facei])
                         {
-                            pphi[facei] += pXj[facei]
-                              * sqr
-                                (
-                                    Fij(speciei,speciej) + Bij(speciei, speciej)
-                                  * sqrt(mu(speciei, pp[facei], pT[facei])
-                                  / mu(speciej, pp[facei], pT[facei]))
-                                  * pow025(W(speciej)/W(speciei))
-                                )
-                                / sqrt(8.0*(1.0 + W(speciei)/W(speciej)))
-                                / (1.0 + W(speciej)/W(speciei))
-                                * (
-                                      5.0/(3.0*AijZ(speciei, speciej))
-                                    + W(speciej)/W(speciei)
-                                  );
+                            pphi[facei] += pXj[facei]*sqr
+                            (   
+                                Fij(speciei,speciej) + Bij(speciei, speciej)
+                              * sqrt(mu(speciei, pp[facei], pTt[facei])/mu(speciej, pp[facei], pTt[facei]))
+                              * pow025(W(speciej)/W(speciei))
+                            ) 
+                              / sqrt(8.0*(1.0 + W(speciei)/W(speciej)))
+                              / (1.0 + W(speciej)/W(speciei))
+                              * (5.0/(3.0*AijZ(speciei, speciej)) + W(speciej)/W(speciei));
                         }
-                    }
+                    } 
                 }//end patches loop
             }
         }//end secondary species loop
@@ -122,26 +114,26 @@ Foam::ArmalySuttonMR<ThermoType>::ArmalySuttonMR
 )
 :
     mixingRule(thermo, turbulence),
-
+    
     speciesThermo_
     (
         dynamic_cast<const multi2ComponentMixture<ThermoType>&>
             (this->thermo_).speciesData()
     ),
-
-    AijZ_(species().size()),
+    
+    AijZ_(species().size()), 
     Bij_(species().size()),
     correctedArmalySutton_(subDict("transportModels")
         .lookupOrDefault<bool>("correctedArmalySutton", true)),
+    
     miniXs_(1.0e-8)
-{
-    phi_.setSize(species().size());
-
+{     
+    phi_.setSize(species().size());   
     forAll(phi_, speciei)
     {
         phi_.set
         (
-            speciei,
+            speciei, 
             new volScalarField
             (
                 IOobject
@@ -156,21 +148,16 @@ Foam::ArmalySuttonMR<ThermoType>::ArmalySuttonMR
                 dimless
             )
         );
-    }
-
+    }   
+    
     forAll(species(), speciei)
     {
-        forAll(species(), speciej)
+        for(int speciej=0; speciej<=speciei; speciej++)
         {
-            if
-            (
-                (species()[speciei] == "O" and species()[speciej] == "O+")
-             or (species()[speciei] == "O+" and species()[speciej] == "O")
-             or (species()[speciei] == "N" and species()[speciej] == "N+")
-             or (species()[speciei] == "N+" and species()[speciej] == "N")
-            )
+            if((species()[speciei] == "O" and species()[speciej] == "O+")
+                 or (species()[speciei] == "N" and species()[speciej] == "N+"))
             {
-                if (correctedArmalySutton_)
+                if(correctedArmalySutton_)
                 {
                     AijZ_[speciei][speciej] = 0.21;
                 }
@@ -183,39 +170,31 @@ Foam::ArmalySuttonMR<ThermoType>::ArmalySuttonMR
             {
                 AijZ_[speciei][speciej] = 1.25;
             }
-
+            
             if
             (
-                speciesThermo_[speciei].particleCharge() == 0
-             && speciesThermo_[speciej].particleCharge() == 0
+                speciesThermo_[speciei].particleCharge() == 0 
+                    and speciesThermo_[speciej].particleCharge() == 0
             )
             {
                 Bij_[speciei][speciej] = 0.78;
             }
             else if
-            (
-                (
-                    speciesThermo_[speciei].particleCharge() == 1
-                 && speciesThermo_[speciej].particleCharge() == 0
-                )
-             or (
-                    speciesThermo_[speciei].particleCharge() == 0
-                 && speciesThermo_[speciej].particleCharge() == 1
-                )
+            (    
+                (speciesThermo_[speciei].particleCharge() == 1 
+                    and speciesThermo_[speciej].particleCharge() == 0) 
+             or (speciesThermo_[speciei].particleCharge() == 0 
+                    and speciesThermo_[speciej].particleCharge() == 1)
             )
             {
                 Bij_[speciei][speciej] = 0.15;
             }
             else if
-            (
-                (
-                    speciesThermo_[speciei].particleCharge() == 0
-                 && speciesThermo_[speciej].particleCharge() == -1
-                )
-             or (
-                    speciesThermo_[speciei].particleCharge() == -1
-                 && speciesThermo_[speciej].particleCharge() == 0
-                )
+            (    
+                (speciesThermo_[speciei].particleCharge() == 0 
+                    and speciesThermo_[speciej].particleCharge() == -1) 
+             or (speciesThermo_[speciei].particleCharge() == -1 
+                    and speciesThermo_[speciej].particleCharge() == 0)
             )
             {
                 Bij_[speciei][speciej] = 0.2;
@@ -227,22 +206,6 @@ Foam::ArmalySuttonMR<ThermoType>::ArmalySuttonMR
         }
     }
     
-//    Info << tab;
-//    
-//    forAll(species(), s)
-//    {
-//        Info << species()[s] << tab;
-//    }
-//    
-//    forAll(species(), s)
-//    {
-//        Info << nl << species()[s] << tab;
-//        forAll(species(), r)
-//        {
-//            Info << Bij(s,r) << tab;
-//        }
-//    }
-
     correct();
 }
 
@@ -252,169 +215,135 @@ Foam::ArmalySuttonMR<ThermoType>::ArmalySuttonMR
 template<class ThermoType>
 void Foam::ArmalySuttonMR<ThermoType>::correct()
 {
-    updatePhi();
+    updatePhi(); 
 
-    const volScalarField& T = thermo_.T();
+    const volScalarField& Tt = thermo_.Tt();
     const volScalarField& p = thermo_.p();
-    const volScalarField& CptrMix = thermo_.CptrMix();
-    const volScalarField& CpvelMix = thermo_.CpvelMix();
-    const volScalarField& CpMix = thermo_.CpMix();
-    
-    const scalarField& TCells = T.internalField();
+    const scalarField& TtCells = Tt.internalField();
     const scalarField& pCells = p.internalField();
-    const scalarField& CpvelMixCells = CpvelMix.internalField();
-
-    volScalarField& muMix = thermo_.mu();
-    volScalarField& kappatrMix = thermo_.kappatr();
-    volScalarField& kappaveMix = thermo_.kappave();
-    volScalarField& kappaMix = thermo_.kappa();
-    volScalarField& alphatrMix = thermo_.alphatr();
-    volScalarField& alphaveMix = thermo_.alphave();
-    volScalarField& alphaMix = thermo_.alpha();
-
-    scalarField& muCells = muMix.primitiveFieldRef();
-    scalarField& kappatrCells = kappatrMix.primitiveFieldRef();
-    scalarField& kappaveCells = kappaveMix.primitiveFieldRef();
-    scalarField& alphaveCells = alphaveMix.primitiveFieldRef();
     
-    //- Initialisation
+    volScalarField& muMix = thermo_.mu();
+    volScalarField tempoMu = muMix*0.0;
+    
+    volScalarField& kappaMix = thermo_.kappatr();
+    volScalarField& kappaveMix = thermo_.kappave();
+    volScalarField tempoKappatr = kappaMix;
+    volScalarField tempoKappave = kappaveMix;
+    
+    volScalarField& alphaMix = thermo_.alphatr();
+    volScalarField& alphaveMix = thermo_.alphave();
+    volScalarField tempoAlphatr = alphaMix;
+    volScalarField tempoAlphave = alphaveMix;
+    
+    scalarField& muCells = tempoMu.primitiveFieldRef();
+    scalarField& kappatrCells = tempoKappatr.primitiveFieldRef();
+    scalarField& kappaveCells = tempoKappave.primitiveFieldRef();
+    scalarField& alphatrCells = tempoAlphatr.primitiveFieldRef();
+    scalarField& alphaveCells = tempoAlphave.primitiveFieldRef();
+    
+    //- Initialisations
     muCells = 0.0;
     kappatrCells = 0.0;
     kappaveCells = 0.0;
-        
-    forAll(T.boundaryField(), patchi)
+    alphatrCells = 0.0;
+    alphaveCells = 0.0;
+    
+    forAll(tempoMu.boundaryField(), patchi)
     {
-        fvPatchScalarField& pmu = muMix.boundaryFieldRef()[patchi];
-        fvPatchScalarField& pkappatr = kappatrMix.boundaryFieldRef()[patchi];
-        fvPatchScalarField& pkappave = kappaveMix.boundaryFieldRef()[patchi];
-
+        fvPatchScalarField& pmu = tempoMu.boundaryFieldRef()[patchi];
+        fvPatchScalarField& pkappatr = tempoKappatr.boundaryFieldRef()[patchi];
+        fvPatchScalarField& pkappave = tempoKappave.boundaryFieldRef()[patchi];
+        fvPatchScalarField& palphatr = tempoAlphatr.boundaryFieldRef()[patchi];
+        fvPatchScalarField& palphave = tempoAlphave.boundaryFieldRef()[patchi];
+        
         pmu = 0.0;
         pkappatr = 0.0;
         pkappave = 0.0;
+        palphatr = 0.0;
+        palphave = 0.0;
+        
     }
-
+    
+    //- Cell values
     forAll(species(), speciei)
-    {
-        const scalar R = thermo_.composition().R(speciei);
-        
-        scalar Rtr = R;
-        scalar Rvel = 0.0;
-        if (thermo_.composition().isElectron(speciei))
-        {
-            Rtr = 0.0;
-            Rvel = R;
-        }
-        
+    { 
         const volScalarField& Tve = thermo_.composition().Tv(speciei);
         const volScalarField& X = thermo_.composition().X(speciei);
-        const volScalarField& Cvtr = thermo_.composition().Cvtr(speciei);
-        const volScalarField& Cvvel = thermo_.composition().Cvvel(speciei);
-        
         const scalarField& TveCells = Tve.internalField();
         const scalarField& XCells = X.internalField();
-        const scalarField& CvtrCells = Cvtr.internalField();
-        const scalarField& CvvelCells = Cvvel.internalField();
         const scalarField& phiCells = phi_[speciei].internalField();
-
+        
         scalarField& spmuCells = spmu_[speciei].primitiveFieldRef();
         scalarField& spkappatrCells = spkappatr_[speciei].primitiveFieldRef();
         scalarField& spkappaveCells = spkappave_[speciei].primitiveFieldRef();
         scalarField& spalphatrCells = spalphatr_[speciei].primitiveFieldRef();
         scalarField& spalphaveCells = spalphave_[speciei].primitiveFieldRef();
-
-        //- Cell values
+        
         forAll(XCells, celli)
         {
-            const scalar factorCelli = XCells[celli]/phiCells[celli];
+            spmuCells[celli] = mu(speciei, pCells[celli], TtCells[celli]);
+            muCells[celli] += XCells[celli]*spmuCells[celli]/phiCells[celli];
+                
+            spkappatrCells[celli] = kappatr(speciei, pCells[celli], TtCells[celli]);
+            kappatrCells[celli] += XCells[celli]*spkappatrCells[celli]/phiCells[celli];  
             
-            spmuCells[celli] = mu(speciei, pCells[celli], TCells[celli]);
-            muCells[celli] += factorCelli*spmuCells[celli];
+            spkappaveCells[celli] = kappave(speciei, pCells[celli], TtCells[celli], TveCells[celli]);
+            kappaveCells[celli] += XCells[celli]*spkappaveCells[celli]/phiCells[celli];
             
-            spkappatrCells[celli] =
-                kappatr(speciei, pCells[celli], TCells[celli]);
-            kappatrCells[celli] += factorCelli*spkappatrCells[celli];
+            spalphatrCells[celli] = alphatr(speciei, pCells[celli], TtCells[celli]);
+            alphatrCells[celli] += XCells[celli]*spalphatrCells[celli]/phiCells[celli];  
+            
+            spalphaveCells[celli] = alphave(speciei, pCells[celli], TtCells[celli], TveCells[celli]);
+            alphaveCells[celli] += XCells[celli]*spalphaveCells[celli]/phiCells[celli];
+        }      
 
-            spkappaveCells[celli] =
-                kappave(speciei, pCells[celli], TCells[celli], TveCells[celli]);
-            kappaveCells[celli] += factorCelli*spkappaveCells[celli];
-            
-            spalphatrCells[celli] = spkappatrCells[celli]
-               / max(CvtrCells[celli] + Rtr, 1e-12);
-            spalphaveCells[celli] = spkappaveCells[celli]
-               / max(CvvelCells[celli] + Rvel, 1e-12);
-        }// end cells loop
-        
         //- Patch values
         forAll(X.boundaryField(), patchi)
-        {
-            const fvPatchScalarField& pX = X.boundaryField()[patchi];
-            const fvPatchScalarField& pp = p.boundaryField()[patchi];
-            const fvPatchScalarField& pT = T.boundaryField()[patchi];
+        {        
             const fvPatchScalarField& pTve = Tve.boundaryField()[patchi];
-            const fvPatchScalarField& pCvtr = Cvtr.boundaryField()[patchi];
-            const fvPatchScalarField& pCvvel = Cvvel.boundaryField()[patchi];
-            const fvPatchScalarField& pphi =
-                phi_[speciei].boundaryField()[patchi];
-
-            fvPatchScalarField& pspmu =
-                spmu_[speciei].boundaryFieldRef()[patchi];
-            fvPatchScalarField& pmu = muMix.boundaryFieldRef()[patchi];
-            fvPatchScalarField& pspkappatr =
-                spkappatr_[speciei].boundaryFieldRef()[patchi];
-            fvPatchScalarField& pkappatr =
-                kappatrMix.boundaryFieldRef()[patchi];
-            fvPatchScalarField& pspkappave =
-                spkappave_[speciei].boundaryFieldRef()[patchi];
-            fvPatchScalarField& pkappave =
-                kappaveMix.boundaryFieldRef()[patchi];
-            fvPatchScalarField& pspalphatr =
-                spalphatr_[speciei].boundaryFieldRef()[patchi];
-            fvPatchScalarField& pspalphave =
-                spalphave_[speciei].boundaryFieldRef()[patchi];
-                
-            forAll(pX, facei)
-            {
-                const scalar pfactorFacei = pX[facei]/pphi[facei];
-                
-                pspmu[facei] = mu(speciei, pp[facei], pT[facei]);
-                pmu[facei] += pfactorFacei*pspmu[facei];
-                
-                pspkappatr[facei] = kappatr(speciei, pp[facei], pT[facei]);
-                pkappatr[facei] += pfactorFacei*pspkappatr[facei];
-                
-                pspkappave[facei] =
-                    kappave(speciei, pp[facei], pT[facei], pTve[facei]);
-                pkappave[facei] += pfactorFacei*pspkappave[facei];
-                
-                pspalphatr[facei] = pspkappatr[facei]
-                    /max(pCvtr[facei] + Rtr, 1e-12);
-                pspalphave[facei] = pspkappave[facei]
-                    /max(pCvvel[facei] + Rvel, 1e-12);
-            }// end faces loop
-        }// end patches loop
-        
-    }// end species loop
-    
-    kappaMix = kappatrMix + kappaveMix;
-    alphatrMix = kappatrMix/CptrMix;
-    alphaMix = kappaMix/CpMix;
-    
-    alphaveCells = kappaveCells/max(CpvelMixCells, 1e-12);
-
-    forAll(T.boundaryField(), patchi)
-    {
-        const fvPatchScalarField& pCpvel = CpvelMix.boundaryField()[patchi];
-        const fvPatchScalarField& pkappave =
-            kappaveMix.boundaryFieldRef()[patchi];
+            const fvPatchScalarField& pX = X.boundaryField()[patchi];
+                       
+            const fvPatchScalarField& pTt = Tt.boundaryField()[patchi];
+            const fvPatchScalarField& pp = p.boundaryField()[patchi];
+            const fvPatchScalarField& pphi = phi_[speciei].boundaryField()[patchi];
             
-        fvPatchScalarField& palphave = alphaveMix.boundaryFieldRef()[patchi];
-
-        forAll(palphave, facei)
-        {
-            palphave[facei] = pkappave[facei]/max(pCpvel[facei], 1e-12);
-        }
-    }
-}
+            fvPatchScalarField& pspmu = spmu_[speciei].boundaryFieldRef()[patchi];
+            fvPatchScalarField& pmu = tempoMu.boundaryFieldRef()[patchi];
+            fvPatchScalarField& pspkappatr = spkappatr_[speciei].boundaryFieldRef()[patchi];
+            fvPatchScalarField& pkappatr = tempoKappatr.boundaryFieldRef()[patchi];
+            fvPatchScalarField& pspkappave = spkappave_[speciei].boundaryFieldRef()[patchi];
+            fvPatchScalarField& pkappave = tempoKappave.boundaryFieldRef()[patchi];
+            fvPatchScalarField& pspalphatr = spalphatr_[speciei].boundaryFieldRef()[patchi];
+            fvPatchScalarField& palphatr = tempoAlphatr.boundaryFieldRef()[patchi];
+            fvPatchScalarField& pspalphave = spalphave_[speciei].boundaryFieldRef()[patchi];
+            fvPatchScalarField& palphave = tempoAlphave.boundaryFieldRef()[patchi];
+            
+            forAll(pX, facei)
+            { 
+                pspmu[facei] = mu(speciei, pp[facei], pTt[facei]);
+                pmu[facei] += pX[facei]*pspmu[facei]/pphi[facei];       
+                    
+                pspkappatr[facei] = kappatr(speciei, pp[facei], pTt[facei]);
+                pkappatr[facei] += pX[facei]*pspkappatr[facei]/pphi[facei];   
+                    
+                pspkappave[facei] = kappave(speciei, pp[facei], pTt[facei], pTve[facei]);
+                pkappave[facei] += pX[facei]*pspkappave[facei]/pphi[facei]; 
+                
+                pspalphatr[facei] = alphatr(speciei, pp[facei], pTt[facei]);
+                palphatr[facei] += pX[facei]*pspalphatr[facei]/pphi[facei];   
+                    
+                pspalphave[facei] = alphave(speciei, pp[facei], pTt[facei], pTve[facei]);
+                palphave[facei] += pX[facei]*pspalphave[facei]/pphi[facei]; 
+            }  
+        }//end patches loop
+    }//end species loop
+       
+    muMix = tempoMu;
+    kappaMix = tempoKappatr;
+    kappaveMix = tempoKappave;
+    alphaMix = tempoAlphatr;
+    alphaveMix = tempoAlphave;
+} 
 
 
 template<class ThermoType>
@@ -423,34 +352,31 @@ void Foam::ArmalySuttonMR<ThermoType>::write()
     if (writeMuSpecies_)
     {
         forAll(species(), speciei)
-        {
-            spmu_[speciei].write();
-        }
-    }
-
+        {  
+            spmu_[speciei].write();   
+        }      
+    } 
+    
     if (writeMuMixture_)
     {
-        thermo_.mu().write();
+        thermo_.mu().write();     
     }
-
+    
     if (writeKappaSpecies_)
     {
         forAll(species(), speciei)
-        {
-            spkappatr_[speciei].write();
-            spkappave_[speciei].write();
-            spalphatr_[speciei].write();
-            spalphave_[speciei].write();
-        }
-    }
-
+        {  
+            spkappatr_[speciei].write(); 
+            spkappave_[speciei].write();  
+        }      
+    } 
+    
     if (writeKappaMixture_)
     {
-        thermo_.kappatr().write();
-        thermo_.kappave().write();
-        thermo_.alpha().write();
-    }
-}
+        thermo_.kappatr().write(); 
+        thermo_.kappave().write();    
+    }      
+} 
 
 
 template<class ThermoType>
@@ -465,6 +391,6 @@ bool Foam::ArmalySuttonMR<ThermoType>::read()
         return false;
     }
 }
-
+   
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

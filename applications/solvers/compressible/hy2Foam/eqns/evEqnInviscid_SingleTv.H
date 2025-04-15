@@ -1,9 +1,33 @@
 
-// --- Solve vibrational energy equation, INVISCID
 thermalRelaxModelVT().correct();
-volScalarField QVT = thermalRelaxModelVT().QVT();
 
-if (containsElectrons)
+// --- Solve vibrational energy equations, INVISCID
+volScalarField QVT = thermalRelaxModelVT().QVT(0);
+volScalarField QCV = reaction->Scv(0);
+
+for(int speciei = 1; speciei < noSolvedVibEq; speciei++)
+{
+    if(composition.noVibrationalTemp(speciei) != 0)
+    {
+        QVT += thermalRelaxModelVT().QVT(speciei);
+    }
+    
+    if(composition.particleType(speciei) == 2 or composition.particleType(speciei) == 4)
+    {
+        QCV += reaction->Scv(speciei);
+    }
+}
+
+forAll(Y, speciei)
+{
+    if(composition.particleType(speciei) == 1)
+    {
+        QCV -= reaction->Seiir(speciei);
+	//Info << "Seiir_" << composition.species()[speciei] << ": " << reaction->Seiir(speciei) << endl;
+    }
+} 
+
+if(containsElectrons)
 {
     thermalRelaxModelHE().correct();
     QVT += thermalRelaxModelHE().QHE();
@@ -11,15 +35,15 @@ if (containsElectrons)
 
 fvScalarMatrix rhoEvInviscid
 (
-    fvm::ddt(rhoEv)
-  + fvc::div(phiEvk[0])
+    fvm::ddt(rhoEv) 
+  + fvc::div(phiEvk[0]) 
   - QVT
-  - reaction->Scv()
+  - QCV
 );
 
-if (containsElectrons)
-{
-    rhoEvInviscid += thermo.pe()*fvc::div(U) - reaction->Siir();
+if(containsElectrons)
+{ 
+    rhoEvInviscid += (fvc::grad(composition.pP("e-")) & U);
 }
 
 rhoEvInviscid.solve
@@ -29,6 +53,8 @@ rhoEvInviscid.solve
 
 ev.correctBoundaryConditions();
 rhoEv.boundaryFieldRef() = rho.boundaryField()*ev.boundaryField();
+     
+thermo.correctHEVK();
 
 ev = rhoEv/rho;
 

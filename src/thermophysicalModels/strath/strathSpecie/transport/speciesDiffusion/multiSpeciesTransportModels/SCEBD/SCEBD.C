@@ -2,16 +2,16 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright held by original author
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
-    OpenFOAM is free software: you can redistribute it and/or modify it
-    under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+    OpenFOAM is free software; you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the
+    Free Software Foundation; either version 2 of the License, or (at your
+    option) any later version.
 
     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -19,83 +19,63 @@ License
     for more details.
 
     You should have received a copy of the GNU General Public License
-    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+    along with OpenFOAM; if not, write to the Free Software Foundation,
+    Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
 \*---------------------------------------------------------------------------*/
 
 #include "SCEBD.H"
+//#include <ctime>
 
 // * * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * //
 
 template<class ThermoType>
 void Foam::SCEBD<ThermoType>::updateCoefficients()
-{
-    const dimensionedScalar zero =
-        dimensionedScalar("zero", dimTime/dimArea, 0.0);
-        
-    const dimensionedScalar epsilon =
-        dimensionedScalar("VSMALL", dimTime/dimArea, Foam::VSMALL);
-        
-    tmp<volScalarField> tsum
-    (
-        new volScalarField
-        (
-            IOobject
-            (
-                "tsum",
-                mesh_.time().timeName(),
-                mesh_,
-                IOobject::NO_READ,
-                IOobject::NO_WRITE
-            ),
-            mesh_,
-            zero
-        )
-    );
-    
-    const volScalarField& rho = thermo_.rho();
-    
-    volScalarField& sum = tsum.ref();
-    
+{     
     DijModel_().update();
 
-    forAll(heavySpecies(), i)
+    forAll(species(), speciei)
     {
-        const label speciei = thermo_.composition().heavySpeciesIds(i);
-        
-        const volScalarField& Xi = thermo_.composition().X(speciei);
-        
-        const volScalarField omegai =
-            thermo_.composition().pD(speciei)/sqrt(W(speciei));
+        volScalarField tmpSum = 0 / Dij(0,0);
+
+        const volScalarField omegai = thermo_.composition().pD(speciei)/sqrt(W(speciei));
         volScalarField omega = omegai;
 
-        sum = zero;
-
-        forAll(heavySpecies(), j)
+        forAll(species(), speciej)
         {
-            const label speciej = thermo_.composition().heavySpeciesIds(j);
-            
-            const volScalarField& Xj = thermo_.composition().X(speciej);
-            
-            if (speciej != speciei)
-            {
-                sum += Xj / Dij(speciei, speciej);
-
+            if (speciej != speciei and thermo_.composition().particleType(speciej) != 0)
+            {     
+                tmpSum += thermo_.composition().X(speciej) / Dij(speciei, speciej);
+                
                 omega += thermo_.composition().pD(speciej)/sqrt(W(speciej));
             }
         }
+        
+        D_[speciei] = thermo_.rho()*(1.0 - omegai/omega) 
+            / (tmpSum + dimensionedScalar("VSMALL", dimTime/dimArea, Foam::VSMALL));   
 
-        D_[speciei] = rho*(1.0 - omegai/omega)/(sum + epsilon);
-
+        const volScalarField& Xi = thermo_.composition().X(speciei);
+        
         forAll(D_[speciei], celli)
         {
             if (1.0 - Xi[celli] < miniXs_)
             {
-                D_[speciei][celli] = 0.0;
+                D_[speciei][celli] = 0;
+            }
+        }
+        
+        forAll(D_[speciei].boundaryField(), patchi)
+        {
+            forAll(D_[speciei].boundaryField()[patchi], facei)
+            {
+                if (1.0 - Xi.boundaryField()[patchi][facei] < miniXs_)
+                {
+                    D_[speciei].boundaryFieldRef()[patchi][facei] = 0;
+                }  
             }
         }
     }
-}
+} 
 
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
@@ -108,22 +88,22 @@ Foam::SCEBD<ThermoType>::SCEBD
 )
 :
     multiSpeciesTransportModel(thermo, turbulence),
-
+    
     speciesThermo_
     (
         dynamic_cast<const multi2ComponentMixture<ThermoType>&>
             (this->thermo_).speciesData()
     ),
-
+    
     miniXs_(1.0e-12)
-{
+{    
     D_.setSize(species().size());
-
+    
     forAll(species(), speciei)
     {
         D_.set
         (
-            speciei,
+            speciei, 
             new volScalarField
             (
                 IOobject
@@ -135,10 +115,10 @@ Foam::SCEBD<ThermoType>::SCEBD
                     IOobject::NO_WRITE
                 ),
                 mesh_,
-                dimensionedScalar("rhoD", dimMass/dimLength/dimTime, 0.0)
+                dimensionedScalar("D", dimMass/dimLength/dimTime, 0.0)
             )
         );
-    }
+    } 
 }
 
 
@@ -149,25 +129,25 @@ void Foam::SCEBD<ThermoType>::correct()
 {
     updateCoefficients();
 
-    if (addPressureGradientTerm_)
+    if(addPressureGradientTerm_)
     {
         pressureGradientContributionToSpeciesMassFlux();
     }
-
-    if (addTemperatureGradientTerm_)
+    
+    if(addTemperatureGradientTerm_)
     {
         temperatureGradientContributionToSpeciesMassFlux();
     }
-
+    
     forAll(species(), speciei)
     {
         calculateJ(speciei);
     }
-
-    calculateSumDiffusionFluxes();
+    
+    calculateSumDiffusiveFluxes();
 }
 
-
+    
 template<class ThermoType>
 bool Foam::SCEBD<ThermoType>::read()
 {
@@ -180,6 +160,6 @@ bool Foam::SCEBD<ThermoType>::read()
         return false;
     }
 }
-
+   
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

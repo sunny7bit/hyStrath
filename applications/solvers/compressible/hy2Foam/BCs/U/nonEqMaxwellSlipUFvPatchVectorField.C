@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2012 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -98,7 +98,7 @@ Foam::nonEqMaxwellSlipUFvPatchVectorField::nonEqMaxwellSlipUFvPatchVectorField
     if
     (
         mag(accommodationCoeff_) < SMALL
-     || mag(accommodationCoeff_) > 1.0
+     || mag(accommodationCoeff_) > 2.0
     )
     {
         FatalIOErrorIn
@@ -134,7 +134,7 @@ Foam::nonEqMaxwellSlipUFvPatchVectorField::nonEqMaxwellSlipUFvPatchVectorField
             this->valueFraction() = scalar(1.0);
         }
     }
-
+    
 }
 
 
@@ -172,10 +172,10 @@ void Foam::nonEqMaxwellSlipUFvPatchVectorField::updateCoeffs()
     const fvPatchScalarField& prho =
         patch().lookupPatchField<volScalarField, scalar>(rhoName_);
     const fvPatchScalarField& pmfp =
-        patch().lookupPatchField<volScalarField, scalar>(mfpName_); // NEW VINCENT 28/02/2016
+        patch().lookupPatchField<volScalarField, scalar>(mfpName_); // NEW VINCENT 28/02/2016    
 
     Field<scalar> pnu(pmu/prho);
-
+    
     // DELETION VINCENT 28/02/2016 ********************************************
     /*Field<scalar> C1
     (
@@ -189,7 +189,7 @@ void Foam::nonEqMaxwellSlipUFvPatchVectorField::updateCoeffs()
       * (2.0 - accommodationCoeff_)/accommodationCoeff_
     ); // NEW VINCENT 28/02/2016: divided by nu to keep the same units as before
     // Thus, what follows remains valid.
-
+    
     valueFraction() = (1.0/(1.0 + patch().deltaCoeffs()*C1*pnu));
 
     refValue() = Uwall_;

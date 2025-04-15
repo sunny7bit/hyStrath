@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2012 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ const Foam::word Foam::fluid2Thermo::transportDictName("transportProperties");
 Foam::fluid2Thermo::fluid2Thermo(const fvMesh& mesh, const word& phaseName)
 :
     basic2Thermo(mesh, phaseName),
-
+    
     transportDictionary_
     (
         IOobject
@@ -64,7 +64,7 @@ Foam::fluid2Thermo::fluid2Thermo
 )
 :
     basic2Thermo(mesh, dict, phaseName),
-
+    
     transportDictionary_
     (
         IOobject

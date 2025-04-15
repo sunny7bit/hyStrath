@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2014 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -38,6 +38,7 @@ License
 #include "janafThermo.H"
 
 #include "decoupledEnergyModesThermo.H"
+#include "sensible2Enthalpy.H"
 #include "sensible2InternalEnergy.H"
 #include "multiThermo.H"
 
@@ -50,6 +51,7 @@ License
 #include "icoPolynomial.H"
 #include "hPolynomialThermo.H"
 #include "polynomialTransport.H"
+//#include "tabulatedTransport.H" // NEW VINCENT TODO
 
 #include "heRho2Thermo.H"
 #include "pureMixture.H"
@@ -60,6 +62,104 @@ namespace Foam
 {
 
 /* * * * * * * * * * * * * * * private static data * * * * * * * * * * * * * */
+
+/*make2Thermo
+(
+    rho2Thermo,
+    heRho2Thermo,
+    pureMixture,
+    constantTransport,
+    sensible2Enthalpy,
+    decoupledEnergyModesThermo,
+    perfect2Gas,
+    advancedSpecie
+);
+
+make2Thermo
+(
+    rho2Thermo,
+    heRho2Thermo,
+    pureMixture,
+    SutherlandEuckenTransport,
+    sensible2Enthalpy,
+    decoupledEnergyModesThermo,
+    perfect2Gas,
+    advancedSpecie
+);
+
+make2Thermo
+(
+    rho2Thermo,
+    heRho2Thermo,
+    pureMixture,
+    BlottnerEuckenTransport,
+    sensible2Enthalpy,
+    decoupledEnergyModesThermo,
+    perfect2Gas,
+    advancedSpecie
+);
+
+make2Thermo
+(
+    rho2Thermo,
+    heRho2Thermo,
+    pureMixture,
+    powerLawEuckenTransport,
+    sensible2Enthalpy,
+    decoupledEnergyModesThermo,
+    perfect2Gas,
+    advancedSpecie
+);*/
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+/*make2Thermo
+(
+    rho2Thermo,
+    heRho2Thermo,
+    pureMixture,
+    constantTransport,
+    sensible2InternalEnergy,
+    decoupledEnergyModesThermo,
+    perfect2Gas,
+    advancedSpecie
+);
+
+make2Thermo
+(
+    rho2Thermo,
+    heRho2Thermo,
+    pureMixture,
+    SutherlandEuckenTransport,
+    sensible2InternalEnergy,
+    decoupledEnergyModesThermo,
+    perfect2Gas,
+    advancedSpecie
+);
+
+make2Thermo
+(
+    rho2Thermo,
+    heRho2Thermo,
+    pureMixture,
+    BlottnerEuckenTransport,
+    sensible2InternalEnergy,
+    decoupledEnergyModesThermo,
+    perfect2Gas,
+    advancedSpecie
+);
+
+make2Thermo
+(
+    rho2Thermo,
+    heRho2Thermo,
+    pureMixture,
+    powerLawEuckenTransport,
+    sensible2InternalEnergy,
+    decoupledEnergyModesThermo,
+    perfect2Gas,
+    advancedSpecie
+);*/
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

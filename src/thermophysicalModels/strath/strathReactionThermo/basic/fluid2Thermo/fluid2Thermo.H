@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2012-2013 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@ SourceFiles
 #define fluid2Thermo_H
 
 #include "basic2Thermo.H"
-#include "compressibleTransportModel.H"
+#include "compressibleTransportModel.H" // NEW VINCENT 08/10/2017
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -50,7 +50,7 @@ namespace Foam
 class fluid2Thermo
 :
     public basic2Thermo,
-    public compressibleTransportModel
+    public compressibleTransportModel // NEW VINCENT 08/10/2017
 {
 
 protected:
@@ -59,7 +59,7 @@ protected:
 
         //- Transport dictionary
         IOdictionary transportDictionary_;
-
+        
 
 public:
 
@@ -110,24 +110,30 @@ public:
     // Member functions
 
         static const word transportDictName;
-
+        
         IOdictionary& transportDictionary()
         {
             return transportDictionary_;
         }
-
+        
         // Access to thermodynamic state variables
 
             //- Compressibility [s^2/m^2]
             virtual const volScalarField& psi() const = 0;
-
-            //- Return non-const access to the local compressibility
+            
+            //- Return non-const access to the local compressibility 
             //  field [s^2/m^2]
-            virtual volScalarField& psi() = 0;
+            virtual volScalarField& getPsi() = 0;
 
 
         // Access to transport state variables
 
+            //- Dynamic viscosity of mixture [kg/m/s]
+            //virtual const volScalarField& mu() const = 0;
+
+            //- Dynamic viscosity of mixture for patch [kg/m/s]
+            //virtual const scalarField& mu(const label patchi) const = 0;
+            
             //- Return the dynamic laminar viscosity of the mixture [kg/m/s]
             virtual tmp<volScalarField> mu() const = 0;
 
@@ -140,7 +146,7 @@ public:
 
             //- Kinematic viscosity of mixture for patch [m^2/s]
             virtual tmp<scalarField> nu(const label patchi) const;
-
+            
 };
 
 

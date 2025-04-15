@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -111,11 +111,7 @@ inline advancedSpecie::advancedSpecie(const advancedSpecie& as)
 {}
 
 
-inline advancedSpecie::advancedSpecie
-(
-    const word& name,
-    const advancedSpecie& as
-)
+inline advancedSpecie::advancedSpecie(const word& name, const advancedSpecie& as)
 :
     name_(name),
     nMoles_(as.nMoles_),
@@ -251,7 +247,7 @@ inline void advancedSpecie::operator-=(const advancedSpecie& as)
 
     molWeight_ =
         nMoles_/diffnMoles*molWeight_
-      - as.nMoles_/diffnMoles*as.molWeight_;
+      - as.nMoles_/diffnMoles*as.molWeight_; 
 
     nMoles_ = diffnMoles;
 }
@@ -265,11 +261,7 @@ inline void advancedSpecie::operator*=(const scalar s)
 
 // * * * * * * * * * * * * * * * Friend Operators  * * * * * * * * * * * * * //
 
-inline advancedSpecie operator+
-(
-    const advancedSpecie& as1,
-    const advancedSpecie& as2
-)
+inline advancedSpecie operator+(const advancedSpecie& as1, const advancedSpecie& as2)
 {
     scalar sumNmoles = max(as1.nMoles_ + as2.nMoles_, SMALL);
 
@@ -295,11 +287,7 @@ inline advancedSpecie operator+
 }
 
 
-inline advancedSpecie operator-
-(
-    const advancedSpecie& as1,
-    const advancedSpecie& as2
-)
+inline advancedSpecie operator-(const advancedSpecie& as1, const advancedSpecie& as2)
 {
     scalar diffNmoles = as1.nMoles_ - as2.nMoles_;
     if (mag(diffNmoles) < SMALL)
@@ -348,11 +336,7 @@ inline advancedSpecie operator*(const scalar s, const advancedSpecie& as)
 }
 
 
-inline advancedSpecie operator==
-(
-    const advancedSpecie& as1,
-    const advancedSpecie& as2
-)
+inline advancedSpecie operator==(const advancedSpecie& as1, const advancedSpecie& as2)
 {
     return as2 - as1;
 }

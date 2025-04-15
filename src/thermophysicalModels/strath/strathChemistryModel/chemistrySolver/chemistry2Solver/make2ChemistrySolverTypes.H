@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2013 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -27,10 +27,12 @@ License
 #define make2ChemistrySolverTypes_H
 
 #include "chemistry2Solver.H"
+
 #include "chemistry2Model.H"
 
 #include "no2ChemistrySolver.H"
 #include "Euler2Implicit.H"
+#include "ode2.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -66,6 +68,13 @@ License
     make2ChemistrySolverType                                                  \
     (                                                                         \
         Euler2Implicit,                                                       \
+        CompChemModel,                                                        \
+        MultiThermo                                                           \
+    );                                                                        \
+                                                                              \
+    make2ChemistrySolverType                                                  \
+    (                                                                         \
+        ode2,                                                                 \
         CompChemModel,                                                        \
         MultiThermo                                                           \
     );                                                                        \

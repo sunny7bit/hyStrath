@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2012 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -39,9 +39,9 @@ namespace Foam
 
 // * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * * //
 
-Foam::wordList Foam::rho2Thermo::rhoBoundaryTypes()
+Foam::wordList Foam::rho2Thermo::rhoBoundaryTypes() // NEW VINCENT 13/04/2016
 {
-    const volScalarField::Boundary& pbf = this->T_.boundaryField();
+    const volScalarField::Boundary& pbf = this->Tt_.boundaryField();
     wordList rhoBoundaryTypes = pbf.types();
 
     forAll(rhoBoundaryTypes, patchi)
@@ -55,16 +55,16 @@ Foam::wordList Foam::rho2Thermo::rhoBoundaryTypes()
             rhoBoundaryTypes[patchi] = fixedRhoFvPatchScalarField::typeName;
         }
     }
-
+    
     return rhoBoundaryTypes;
-}
+} 
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 Foam::rho2Thermo::rho2Thermo(const fvMesh& mesh, const word& phaseName)
 :
     multi2Thermo(mesh, phaseName),
-
+    
     rho_
     (
         IOobject
@@ -121,7 +121,7 @@ Foam::rho2Thermo::rho2Thermo(const fvMesh& mesh, const word& phaseName)
         mesh,
         dimensionSet(1, 1, -3, -1, 0)
     ),
-
+    
     kappave_
     (
         IOobject
@@ -136,20 +136,6 @@ Foam::rho2Thermo::rho2Thermo(const fvMesh& mesh, const word& phaseName)
         dimensionSet(1, 1, -3, -1, 0)
     ),
     
-    kappa_
-    (
-        IOobject
-        (
-            phasePropertyName("kappa"),
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimensionSet(1, 1, -3, -1, 0)
-    ),
-
     alphatr_
     (
         IOobject
@@ -163,26 +149,12 @@ Foam::rho2Thermo::rho2Thermo(const fvMesh& mesh, const word& phaseName)
         mesh,
         dimMass/dimLength/dimTime
     ),
-
+    
     alphave_
     (
         IOobject
         (
             phasePropertyName("alphave"),
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimMass/dimLength/dimTime
-    ),
-    
-    alpha_
-    (
-        IOobject
-        (
-            phasePropertyName("alpha"),
             mesh.time().timeName(),
             mesh,
             IOobject::NO_READ,
@@ -217,7 +189,7 @@ Foam::rho2Thermo::rho2Thermo
         dimDensity,
         rhoBoundaryTypes()
     ),
-
+    
     psi_
     (
         IOobject
@@ -244,8 +216,9 @@ Foam::rho2Thermo::rho2Thermo
         ),
         mesh,
         dimensionedScalar("mu", dimensionSet(1, -1, -1, 0, 0), 1e-6)
+        //dimensionSet(1, -1, -1, 0, 0)
     ),
-
+    
     kappatr_
     (
         IOobject
@@ -259,7 +232,7 @@ Foam::rho2Thermo::rho2Thermo
         mesh,
         dimensionSet(1, 1, -3, -1, 0)
     ),
-
+    
     kappave_
     (
         IOobject
@@ -274,20 +247,6 @@ Foam::rho2Thermo::rho2Thermo
         dimensionSet(1, 1, -3, -1, 0)
     ),
     
-    kappa_
-    (
-        IOobject
-        (
-            phasePropertyName("kappa"),
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimensionSet(1, 1, -3, -1, 0)
-    ),
-
     alphatr_
     (
         IOobject
@@ -301,26 +260,12 @@ Foam::rho2Thermo::rho2Thermo
         mesh,
         dimMass/dimLength/dimTime
     ),
-
+    
     alphave_
     (
         IOobject
         (
             phasePropertyName("alphave"),
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimMass/dimLength/dimTime
-    ),
-    
-    alpha_
-    (
-        IOobject
-        (
-            phasePropertyName("alpha"),
             mesh.time().timeName(),
             mesh,
             IOobject::NO_READ,
@@ -376,10 +321,22 @@ const Foam::volScalarField& Foam::rho2Thermo::psi() const
 }
 
 
-Foam::volScalarField& Foam::rho2Thermo::psi()
+Foam::volScalarField& Foam::rho2Thermo::getPsi()
 {
     return psi_;
 }
+
+
+/*const Foam::volScalarField& Foam::rho2Thermo::mu() const
+{
+    return mu_;
+}
+
+
+const Foam::scalarField& Foam::rho2Thermo::mu(const label patchi) const
+{
+    return mu_.boundaryField()[patchi];
+}*/
 
 
 Foam::tmp<Foam::volScalarField> Foam::rho2Thermo::mu() const
@@ -436,24 +393,6 @@ Foam::volScalarField& Foam::rho2Thermo::kappave()
 }
 
 
-const Foam::volScalarField& Foam::rho2Thermo::kappa() const
-{
-    return kappa_;
-}
-
-
-const Foam::scalarField& Foam::rho2Thermo::kappa(const label patchi) const
-{
-    return kappa_.boundaryField()[patchi];
-}
-
-
-Foam::volScalarField& Foam::rho2Thermo::kappa()
-{
-    return kappa_;
-}
-
-
 const Foam::volScalarField& Foam::rho2Thermo::alphatr() const
 {
     return alphatr_;
@@ -490,58 +429,17 @@ Foam::volScalarField& Foam::rho2Thermo::alphave()
 }
 
 
-const Foam::volScalarField& Foam::rho2Thermo::alpha() const
-{
-    return alpha_;
-}
-
-
-const Foam::scalarField& Foam::rho2Thermo::alpha(const label patchi) const
-{
-    return alpha_.boundaryField()[patchi];
-}
-
-
-Foam::volScalarField& Foam::rho2Thermo::alpha()
-{
-    return alpha_;
-}
-
-
 Foam::tmp<Foam::volScalarField> Foam::rho2Thermo::kappaEff
 (
     const volScalarField& alphat
 ) const
 {
-    const fvMesh& mesh = alphat.mesh();
-    
-    tmp<volScalarField> tkappaEff
-    (
-        new volScalarField
-        (
-            IOobject
-            (
-                "kappaEff",
-                mesh.time().timeName(),
-                mesh,
-                IOobject::NO_READ,
-                IOobject::NO_WRITE
-            ),
-            mesh,
-            dimensionedScalar
-            (
-                "zero",
-                dimensionSet(1, 1, -3, -1, 0),
-                0.0
-            )
-        )
-    );
-    
-    volScalarField& kappaEff = tkappaEff.ref();
-    
-    kappaEff = kappa() + CpMix()*alphat;
-      
-    return tkappaEff;
+    //tmp<Foam::volScalarField> kappaEff(Cv()*alphaEff(alphat)); // DELETED VINCENT
+    // Both kappa_transrot and alpha_turbulent are known
+    // Unlike kappa_transrot, kappa_turbu = Cp()*alphat
+    tmp<Foam::volScalarField> kappaEff(kappatr() + Cp_t()*alphat);
+    kappaEff.ref().rename("kappaEff");
+    return kappaEff;
 }
 
 
@@ -551,7 +449,25 @@ Foam::tmp<Foam::scalarField> Foam::rho2Thermo::kappaEff
     const label patchi
 ) const
 {
-    return kappa(patchi)+ CpMix(patchi)*alphat;
+    /*return // DELETED VINCENT
+        this->Cv
+        (
+            this->p_.boundaryField()[patchi],
+            this->Tt_.boundaryField()[patchi],
+            patchi
+        )*alphaEff(alphat, patchi);*/
+        
+    // Both kappa_transrot and alpha_turbulent are known
+    return
+    (
+        kappatr(patchi)
+      + this->Cp_t
+        (
+            this->p_.boundaryField()[patchi],
+            this->Tt_.boundaryField()[patchi],
+            patchi
+        )*alphat
+    );
 }
 
 
@@ -560,35 +476,10 @@ Foam::tmp<Foam::volScalarField> Foam::rho2Thermo::alphaEff
     const volScalarField& alphat
 ) const
 {
-    const fvMesh& mesh = alphat.mesh();
-    
-    tmp<volScalarField> talphaEff
-    (
-        new volScalarField
-        (
-            IOobject
-            (
-                "alphaEff",
-                mesh.time().timeName(),
-                mesh,
-                IOobject::NO_READ,
-                IOobject::NO_WRITE
-            ),
-            mesh,
-            dimensionedScalar
-            (
-                "zero",
-                dimMass/dimLength/dimTime,
-                0.0
-            )
-        )
-    );
-    
-    volScalarField& alphaEff = talphaEff.ref();
-    
-    alphaEff = alpha() + alphat;
-    
-    return talphaEff;
+    // Both alpha_transrot and alpha_turbulent are known
+    tmp<Foam::volScalarField> alphaEff(alphatr() + alphat);
+    alphaEff.ref().rename("alphaEff");
+    return alphaEff;
 }
 
 
@@ -598,7 +489,12 @@ Foam::tmp<Foam::scalarField> Foam::rho2Thermo::alphaEff
     const label patchi
 ) const
 {
-    return alphatr(patchi) + alphat;
+    // Both alpha_transrot and alpha_turbulent are known
+    return
+    (
+        alphatr(patchi)
+      + alphat
+    );
 }
 
 

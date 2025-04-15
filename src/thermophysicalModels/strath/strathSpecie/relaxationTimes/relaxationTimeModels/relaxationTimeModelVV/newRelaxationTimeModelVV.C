@@ -2,16 +2,16 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright held by original author
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
-    OpenFOAM is free software: you can redistribute it and/or modify it
-    under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+    OpenFOAM is free software; you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the
+    Free Software Foundation; either version 2 of the License, or (at your
+    option) any later version.
 
     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -19,12 +19,13 @@ License
     for more details.
 
     You should have received a copy of the GNU General Public License
-    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+    along with OpenFOAM; if not, write to the Free Software Foundation,
+    Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
 \*---------------------------------------------------------------------------*/
 
 #include "relaxationTimeModelVV.H"
-#include "IFstream.H"
+#include "IFstream.H" // NEW VINCENT 10/08/2016
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -49,17 +50,11 @@ Foam::relaxationTimeModelVV::New
             )()
         );
 
-        word partialVVname =
-            word
-            (
-                thermo2TModel.subDict("thermalRelaxationModels").subDict("VV")
-                    .lookup("relaxationType")
-            );
+        word partialVVname = word(thermo2TModel.subDict("thermalRelaxationModels").subDict("VV").lookup("relaxationType"));
+        
+        VVModelName = partialVVname +'<' + thermo.partialThermoName() + '>'; 
 
-        VVModelName = partialVVname +'<' + thermo.partialThermoName() + '>';
-
-        Info<< "Loading the V-V relaxation time model:" << tab
-            << partialVVname << "\n" << endl;
+        Info<< "Loading the V-V relaxation time model:" << tab << partialVVname << "\n" << endl;
     }
 
     fvMeshConstructorTable::iterator cstrIter =

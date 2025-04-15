@@ -5,7 +5,6 @@
 
 // --- Upwind interpolation of primitive fields on faces
 #include "numerics/upwindInterpolation.H"
-// --- Compute numerical fluxes
 #include "numerics/fluxesCalculation.H"
 
 // --- Time control and local time stepping
@@ -13,6 +12,14 @@
 #include "readTimeControls.H"
 #include "LTS/readLTSTimeControls.H"
 #include "setDeltaT.H"
+
+if (adjustTimeStep)
+{
+    //scalar dtChem = chemistry.solve(runTime.deltaT().value());
+    //Info<< "dtChem = " << dtChem << endl;
+    //runTime.setDeltaT(min(dtChem, runTime.deltaT().value()));
+    //Info<< "Dt = " << runTime.deltaT().value() << endl;
+}
 
 runTime++;
 Info<< "Time = " << runTime.timeName() << nl << endl;
@@ -22,13 +29,12 @@ volTensorField tauMC("tauMC", muEff*dev2(Foam::T(fvc::grad(U))));
 
 /*if (hyDev)
 {
-    Zrot = ZrotInf/(1.0 + sqr(pi)/2.0*sqrt(TZ/thermo.T())
-        + (sqr(pi)/4.0 + pi)*TZ/thermo.T());
+    Zrot = ZrotInf/(1.0 + sqr(pi)/2.0*sqrt(TZ/thermo.Tt()) + (sqr(pi)/4.0 + pi)*TZ/thermo.Tt());
     Z = 3.0*pi/(4.0*(thermo.zetar()+3.0))*Zrot;
-
+    
     mub = mu*(2.0*thermo.zetar()*Z)/(3.0*(thermo.zetar()+3.0));
     bulkToShearRatio = mub/mu;
-
+    
     tauMC = tauMC + mub*tr(fvc::grad(U))*I;
 }*/
 
@@ -38,7 +44,7 @@ if (activateLTS)
     #include "LTS/setrDeltaT.H"
 }
 
-// --- Re-set the switch/counter that serves as a warning if the
+// --- Re-set the switch/counter that serves as a warning if the 
 //     temperature goes unbounded
 thermo.resetTemperatureBoundingInfo();
 
@@ -46,7 +52,9 @@ thermo.resetTemperatureBoundingInfo();
 #include "eqns/rhoEqn.H"
 
 // --- Solve species transport and reaction equations
+//scalar time = runTime.elapsedCpuTime();
 #include "eqns/YEqn.H"
+//Info<< "YEqn time" << tab << runTime.elapsedCpuTime() - time << " s" << endl; 
 
 // --- Solve momentum equations
 #include HY2FOAM_EXTERNAL_FILE_MOMENTUM_EQNS
@@ -64,10 +72,10 @@ else if (downgradeSingleTv)
     // --- Solve the vibrational energy equation
     // --- Solve the total energy equation
     //- inviscid
-    #include "eqns/evEqnInviscid_SingleTv.H"
+    #include "eqns/evEqnInviscid_SingleTv.H" 
     #include HY2FOAM_EXTERNAL_FILE_TOTENERGYIVC_EQN
     //- viscous
-    #include "eqns/evEqnViscous_SingleTv.H"
+    #include "eqns/evEqnViscous_SingleTv.H" 
     #include HY2FOAM_EXTERNAL_FILE_TOTENERGYVIS_EQN
 }
 else if (downgradeSingleVibMode)
@@ -75,7 +83,7 @@ else if (downgradeSingleVibMode)
     // --- Solve the vibrational energy equations
     // --- Solve the total energy equation
     //- inviscid
-    #include "eqns/evEqnInviscid.H"
+    #include "eqns/evEqnInviscid.H" 
     #include HY2FOAM_EXTERNAL_FILE_TOTENERGYIVC_EQN
     //- viscous
     #include "eqns/evEqnViscous.H"
@@ -83,18 +91,14 @@ else if (downgradeSingleVibMode)
 }
 else
 {
-    // ABORTIVE WORK
     // --- Solve the vibrational energy equations (one per vib. mode)
     // --- Solve the total energy equation
     //- inviscid
     //#include "eqns/evEqn_MultiModes.H"
     //#include HY2FOAM_EXTERNAL_FILE_TOTENERGYIVC_EQN
     //- viscous
-    //#include HY2FOAM_EXTERNAL_FILE_TOTENERGYVIS_EQN
+    //#include HY2FOAM_EXTERNAL_FILE_TOTENERGYVIS_EQN 
 }
-
-// --- Electro-magnetic fields calculation
-#include "eqns/BEqn.H"
 
 // --- Pressure field calculation
 #include "eqns/pEqn.H"
@@ -106,8 +110,6 @@ else
 
 turbulence->correct();
 
-mhd->update(U);
-
 rarefactionParameters().correct(U);
 
 
@@ -118,20 +120,20 @@ if (runTime.outputTime())
 {
     runTime.write();
     #include "write/write.H"
-
+    
     #ifdef HY2FOAM_EXTERNAL_FILE_OUTPUT
     #include HY2FOAM_EXTERNAL_FILE_OUTPUT
     #endif
 }
 
-previousIterationTime =
+previousIterationTime = 
     max(runTime.elapsedCpuTime()-currentIterationTime, 1e-3);
-
+    
 Info<< "Phase no " << noRestart << "." << noSubRestart
     << "  ExecutionTime = " << runTime.elapsedCpuTime() << " s"
     << "  ClockTime = " << runTime.elapsedClockTime() << " s"
-    << "  Iteration no " << noIteration<<" (" << previousIterationTime
+    << "  Iteration no " << noIteration<<" (" << previousIterationTime 
     << " s)" << nl << endl;
-
+    
 currentIterationTime = runTime.elapsedCpuTime();
 noIteration += 1;

@@ -2,16 +2,16 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright held by original author
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
-    OpenFOAM is free software: you can redistribute it and/or modify it
-    under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+    OpenFOAM is free software; you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the
+    Free Software Foundation; either version 2 of the License, or (at your
+    option) any later version.
 
     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -19,7 +19,8 @@ License
     for more details.
 
     You should have received a copy of the GNU General Public License
-    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+    along with OpenFOAM; if not, write to the Free Software Foundation,
+    Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
 \*---------------------------------------------------------------------------*/
 
@@ -31,17 +32,17 @@ License
 
 namespace Foam
 {
-
-// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
-
+  
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //  
+  
     defineTypeNameAndDebug(mixingRule, 0);
     defineRunTimeSelectionTable(mixingRule, fvMesh);
 }
 
 
-// * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
+// * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //  
 
-
+  
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 Foam::mixingRule::mixingRule
@@ -54,43 +55,28 @@ Foam::mixingRule::mixingRule
     (
         thermo.transportDictionary()
     ),
-
-    mesh_(thermo.T().mesh()),
+    
+    mesh_(thermo.Tt().mesh()), 
     thermo_(thermo),
     turbulence_(turbulence),
-
+    
     spmu_(species().size()),
-    spkappatr_(species().size()),
+    spkappatr_(species().size()),   
     spkappave_(species().size()),
-    spalphatr_(species().size()),
+    spalphatr_(species().size()),    
     spalphave_(species().size()),
-
-    writeMuSpecies_
-    (
-        subDict("transportModels")
-            .lookupOrDefault<bool>("writeViscositySpecies", false)
-    ),
-    writeMuMixture_
-    (
-        subDict("transportModels")
-            .lookupOrDefault<bool>("writeViscosityMixture", false)
-    ),
-    writeKappaSpecies_
-    (
-        subDict("transportModels")
-            .lookupOrDefault<bool>("writeThermalConducSpecies", false)
-    ),
-    writeKappaMixture_
-    (
-        subDict("transportModels")
-            .lookupOrDefault<bool>("writeThermalConducMixture", false)
-    )
-{
+    
+    writeMuSpecies_(subDict("transportModels").lookupOrDefault<bool>("writeViscositySpecies", false)),
+    writeMuMixture_(subDict("transportModels").lookupOrDefault<bool>("writeViscosityMixture", false)),
+    writeKappaSpecies_(subDict("transportModels").lookupOrDefault<bool>("writeThermalConducSpecies", false)),
+    writeKappaMixture_(subDict("transportModels").lookupOrDefault<bool>("writeThermalConducMixture", false))
+    
+{  
     forAll(spmu_, speciei)
     {
         spmu_.set
         (
-            speciei,
+            speciei, 
             new volScalarField
             (
                 IOobject
@@ -102,18 +88,13 @@ Foam::mixingRule::mixingRule
                     IOobject::NO_WRITE
                 ),
                 mesh_,
-                dimensionedScalar
-                (
-                    "mu_" + species()[speciei],
-                    dimMass/dimLength/dimTime,
-                    0.0
-                )
+                dimensionedScalar("mu_" + species()[speciei], dimMass/dimLength/dimTime, 0.0)
             )
         );
         
         spkappatr_.set
         (
-            speciei,
+            speciei, 
             new volScalarField
             (
                 IOobject
@@ -125,18 +106,13 @@ Foam::mixingRule::mixingRule
                     IOobject::NO_WRITE
                 ),
                 mesh_,
-                dimensionedScalar
-                (
-                    "kappatr_" + species()[speciei],
-                    dimensionSet(1,1,-3,-1,0,0,0),
-                    0.0
-                )
+                dimensionedScalar("kappatr_" + species()[speciei], dimensionSet(1,1,-3,-1,0,0,0), 0.0)
             )
         );
-
+        
         spkappave_.set
         (
-            speciei,
+            speciei, 
             new volScalarField
             (
                 IOobject
@@ -148,18 +124,13 @@ Foam::mixingRule::mixingRule
                     IOobject::NO_WRITE
                 ),
                 mesh_,
-                dimensionedScalar
-                (
-                    "kappave_" + species()[speciei],
-                    dimensionSet(1,1,-3,-1,0,0,0),
-                    0.0
-                )
+                dimensionedScalar("kappave_" + species()[speciei], dimensionSet(1,1,-3,-1,0,0,0), 0.0)
             )
         );
-
+        
         spalphatr_.set
         (
-            speciei,
+            speciei, 
             new volScalarField
             (
                 IOobject
@@ -171,18 +142,13 @@ Foam::mixingRule::mixingRule
                     IOobject::NO_WRITE
                 ),
                 mesh_,
-                dimensionedScalar
-                (
-                    "alphatr_" + species()[speciei],
-                    dimMass/dimLength/dimTime,
-                    0.0
-                )
+                dimensionedScalar("alphatr_" + species()[speciei], dimMass/dimLength/dimTime, 0.0)
             )
         );
-
+        
         spalphave_.set
         (
-            speciei,
+            speciei, 
             new volScalarField
             (
                 IOobject
@@ -194,12 +160,7 @@ Foam::mixingRule::mixingRule
                     IOobject::NO_WRITE
                 ),
                 mesh_,
-                dimensionedScalar
-                (
-                    "alphave_" + species()[speciei],
-                    dimMass/dimLength/dimTime,
-                    0.0
-                )
+                dimensionedScalar("alphave_" + species()[speciei], dimMass/dimLength/dimTime, 0.0)
             )
         );
     }

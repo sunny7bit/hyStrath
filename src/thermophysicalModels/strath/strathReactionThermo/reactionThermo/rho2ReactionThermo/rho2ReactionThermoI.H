@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2012 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -28,125 +28,67 @@ License
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
-Foam::scalar Foam::rho2ReactionThermo::Temperature_NewtonRaphson
+Foam::scalar Foam::rho2ReactionThermo::Temperature
 (
     scalar f,
     scalar p,
     scalar T0,
     const PtrList<scalar>& YList,
-    scalar (Foam::basic2MultiComponentMixture::*F)
-    (
-        const label,
-        const scalar,
-        const scalar
-    ) const,
-    scalar (Foam::basic2MultiComponentMixture::*dFdT)
-    (
-        const label,
-        const scalar,
-        const scalar
-    ) const,
+    scalar (Foam::basic2MultiComponentMixture::*F)(const label, const scalar, const scalar) const,
+    scalar (Foam::basic2MultiComponentMixture::*dFdT)(const label, const scalar, const scalar) const,
     scalar (Foam::rho2ReactionThermo::*limit)(const scalar) const
 )
 {
-    // The tolerance and maximum number of iterations are identical to the ones
-    // in multiThermo.C
-    scalar tol_ = 1e-06;
-    label maxIter_ = 100;
-
+    // The tolerance and maximum number of iterations are identical to the ones in multiThermo.C
+    scalar tol_ = 1e-4;
+    scalar maxIter_ = 100;
+    
     scalar Test = T0;
     scalar Tnew = T0;
     scalar Ttol = T0*tol_;
-    label iter = 0;
-
+    int    iter = 0;
+    
     do
     {
         Test = Tnew;
-
-        scalar Fipt = 0.0;
-        scalar dFipt = 0.0;
+        
+        scalar Fipt(0), dFipt(0);
         forAll(composition().species(), i)
         {
             Fipt  += (composition().*F)(i, p, Test)*YList[i];
             dFipt += (composition().*dFdT)(i, p, Test)*YList[i];
         }
-
+        
         Tnew =
             (this->*limit)
             (Test - (Fipt - f)/dFipt);
+        //Info << "iter no" << tab << iter << ", Tnew" << tab << Tnew << endl;    
 
         if (iter++ > maxIter_)
         {
-            // the temperature cannot be derived from the energy
-            // it remains unchanged
-            Tnew = T0;
-            Test = T0;
+            //Info<< "The temperature cannot be recovered from the energy" << endl;
+            //Info<< "Temperature in the cell is reset to Tlow" << nl;
+            Tnew = Tlow_;
+            Test = Tlow_;
             Foam::rho2ReactionThermo::hasCrashedButRecovered = true;
+            /*Info<< "Initial cell temperature" << tab << T0 << " K" << nl
+                << "Last temperature guess before crash" << tab << Tnew 
+                << " K" << endl;
+            FatalErrorIn
+            (
+                "rho2ReactionThermo::T(scalar f, scalar T0, "
+                "scalar (basic2MultiComponentMixture::*F)"
+                "(const scalar) const, "
+                "scalar (basic2MultiComponentMixture::*dFdT)"
+                "(const scalar) const, "
+                "scalar (rho2ReactionThermo::*limit)"
+                "(const scalar) const"
+                ") const"
+            )   << "Maximum number of iterations exceeded"
+                << abort(FatalError);*/
         }
 
     } while (mag(Tnew - Test) > Ttol);
-    
-    return Tnew;
-}
-
-
-Foam::scalar Foam::rho2ReactionThermo::Temperature_Secant
-(
-    scalar f,
-    scalar p,
-    scalar T0,
-    const scalar Tt,
-    const PtrList<scalar>& YList,
-    scalar (Foam::basic2MultiComponentMixture::*F)
-    (
-        const label,
-        const scalar,
-        const scalar
-    ) const,
-    scalar (Foam::rho2ReactionThermo::*limit)(const scalar) const
-)
-{
-    // The tolerance and maximum number of iterations are identical to the ones
-    // in multiThermo.C
-    scalar tol_ = 1e-6;
-    label maxIter_ = 100;
-
-    scalar Test2 = Tt;
-    scalar Test1 = T0;
-    scalar Tnew = T0;
-    scalar Ttol = T0*tol_;
-    label iter = 0;
-    
-    do
-    {
-        Test1 = Tnew;
-
-        scalar Fipt1 = 0.0;
-        scalar Fipt2 = 0.0;
-        forAll(composition().species(), i)
-        {
-            Fipt1 += (composition().*F)(i, p, Test1)*YList[i];
-            Fipt2 += (composition().*F)(i, p, Test2)*YList[i];
-        }
-
-        Tnew =
-            (this->*limit)
-            (Test1 - (Fipt1 - f)*(Test1 - Test2)/(Fipt1 - Fipt2));
-
-        if (iter++ > maxIter_)
-        {
-            // the temperature cannot be derived from the energy
-            // it remains unchanged
-            Tnew = T0;
-            Test1 = T0;
-            Foam::rho2ReactionThermo::hasCrashedButRecovered = true;
-        }
-        
-/*        Info << iter << tab << Test2 << tab << Test1 << tab << Tnew << endl; */
-        
-        Test2 = Test1;
-
-    } while (mag(Tnew - Test1) > Ttol);
 
     return Tnew;
 }
@@ -158,49 +100,54 @@ Foam::scalar Foam::rho2ReactionThermo::Temperature
     scalar f,
     scalar p,
     scalar T0,
-    scalar (Foam::basic2MultiComponentMixture::*F)
-    (
-        const label,
-        const scalar,
-        const scalar
-    ) const,
-    scalar (Foam::basic2MultiComponentMixture::*dFdT)
-    (
-        const label,
-        const scalar,
-        const scalar
-    ) const,
+    scalar (Foam::basic2MultiComponentMixture::*F)(const label, const scalar, const scalar) const,
+    scalar (Foam::basic2MultiComponentMixture::*dFdT)(const label, const scalar, const scalar) const,
     scalar (Foam::rho2ReactionThermo::*limit)(const scalar) const
 )
 {
-    // The tolerance and maximum number of iterations are identical to the ones
-    // in multiThermo.C
-    scalar tol_ = 1e-6;
-    label maxIter_ = 100;
-
+    // The tolerance and maximum number of iterations are identical to the ones in multiThermo.C
+    scalar tol_ = 1e-4;
+    scalar maxIter_ = 100;
+    
     scalar Test = T0;
     scalar Tnew = T0;
     scalar Ttol = T0*tol_;
-    label iter = 0;
+    int    iter = 0;
 
     do
     {
         Test = Tnew;
-
-        scalar Fipt((composition().*F)(i, p, Test)),
+        
+        scalar Fipt((composition().*F)(i, p, Test)), 
             dFipt((composition().*dFdT)(i, p, Test));
-
+        
         Tnew =
             (this->*limit)
             (Test - (Fipt - f)/dFipt);
 
         if (iter++ > maxIter_)
         {
-            // the temperature cannot be derived from the energy
-            // it remains unchanged
-            Tnew = T0;
-            Test = T0;
+            //Info<< "The temperature cannot be recovered from the energy" << endl;
+            //Info<< "Temperature in the cell is reset to Tlow" << nl;
+            Tnew = Tlow_;
+            Test = Tlow_;
             Foam::rho2ReactionThermo::hasCrashedButRecovered = true;
+            /*Info<< "Species " << composition().species()[i] << nl
+                << "Initial cell temperature" << tab << T0 << " K" << nl
+                << "Last temperature guess before crash" << tab << Tnew 
+                << " K" << endl;
+            FatalErrorIn
+            (
+                "rho2ReactionThermo::T(label i, scalar f, scalar T0, "
+                "scalar (basic2MultiComponentMixture::*F)"
+                "(const scalar) const, "
+                "scalar (basic2MultiComponentMixture::*dFdT)"
+                "(const scalar) const, "
+                "scalar (rho2ReactionThermo::*limit)"
+                "(const scalar) const"
+                ") const"
+            )   << "Maximum number of iterations exceeded"
+                << abort(FatalError);*/
         }
 
     } while (mag(Tnew - Test) > Ttol);
@@ -217,7 +164,7 @@ Foam::scalar Foam::rho2ReactionThermo::TEs
     const PtrList<scalar>& YList
 )
 {
-    return Temperature_NewtonRaphson
+    return Temperature
     (
         e,
         p,
@@ -238,7 +185,7 @@ Foam::scalar Foam::rho2ReactionThermo::TtEts
     const PtrList<scalar>& YList
 )
 {
-    return Temperature_NewtonRaphson
+    return Temperature
     (
         e,
         p,
@@ -259,7 +206,7 @@ Foam::scalar Foam::rho2ReactionThermo::TvelEvels
     const PtrList<scalar>& YList
 )
 {
-    return Temperature_NewtonRaphson
+    return Temperature
     (
         e,
         p,
@@ -267,28 +214,6 @@ Foam::scalar Foam::rho2ReactionThermo::TvelEvels
         YList,
         &Foam::basic2MultiComponentMixture::Evels,
         &Foam::basic2MultiComponentMixture::Cv_vel,
-        &Foam::rho2ReactionThermo::limit
-    );
-}
-
-
-Foam::scalar Foam::rho2ReactionThermo::TvelEvels
-(
-    const scalar e,
-    const scalar p,
-    const scalar T0,
-    const scalar Tt,
-    const PtrList<scalar>& YList
-)
-{
-    return Temperature_Secant
-    (
-        e,
-        p,
-        T0,
-        Tt,
-        YList,
-        &Foam::basic2MultiComponentMixture::Evels,
         &Foam::rho2ReactionThermo::limit
     );
 }
@@ -326,13 +251,13 @@ Foam::scalar Foam::rho2ReactionThermo::limit
         noCellsWithTemperatureFieldOutOfRange += 1;
         minMaxTemperatureFieldOutOfRange[0] = min(T, Tlow_);
         minMaxTemperatureFieldOutOfRange[1] = max(T, Thigh_);
-
+        
         return min(max(T, Tlow_), Thigh_);
     }
     else
     {
         return T;
     }
-}
+}   
 
 // ************************************************************************* //

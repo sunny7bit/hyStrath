@@ -2,16 +2,16 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright held by original author
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
-    OpenFOAM is free software: you can redistribute it and/or modify it
-    under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+    OpenFOAM is free software; you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the
+    Free Software Foundation; either version 2 of the License, or (at your
+    option) any later version.
 
     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -19,7 +19,8 @@ License
     for more details.
 
     You should have received a copy of the GNU General Public License
-    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+    along with OpenFOAM; if not, write to the Free Software Foundation,
+    Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
 \*---------------------------------------------------------------------------*/
 
@@ -36,7 +37,7 @@ namespace Foam
         addToRunTimeSelectionTable
         (
             basicMfpModel,
-            hardSphere,
+            hardSphere, 
             dictionary
         );
     }
@@ -56,7 +57,7 @@ Foam::basicMfpModels::hardSphere::hardSphere
 )
 :
     basicMfpModel(name, speciesIndex, dict, dictThermoPhy, p, Tt)
-{
+{   
     molW_ = 1.0e-3*readScalar(dictThermoPhy.subDict(name).subDict("specie").lookup("molWeight"));
 }
 
@@ -66,7 +67,7 @@ Foam::basicMfpModels::hardSphere::hardSphere
 Foam::tmp<Foam::volScalarField>
 Foam::basicMfpModels::hardSphere::mfp() const
 {
-    const fvMesh& mesh = this->T_.mesh();
+    const fvMesh& mesh = this->Tt_.mesh();
 
     tmp<volScalarField> tmfp
     (
@@ -87,15 +88,15 @@ Foam::basicMfpModels::hardSphere::mfp() const
 
     volScalarField& mfp = tmfp.ref();
 
-    forAll(this->T_, celli)
+    forAll(this->Tt_, celli)
     {
-        mfp[celli] = 16.0/5.0*sqrt(molW_/(constant::mathematical::twoPi*constant::physicoChemical::R.value()*this->T_[celli]));
+        mfp[celli] = 16.0/5.0*sqrt(molW_/(constant::mathematical::twoPi*constant::physicoChemical::R.value()*this->Tt_[celli]));
     }
+    
 
-
-    forAll(this->T_.boundaryField(), patchi)
+    forAll(this->Tt_.boundaryField(), patchi)
     {
-        const fvPatchScalarField& pTt = this->T_.boundaryField()[patchi];
+        const fvPatchScalarField& pTt = this->Tt_.boundaryField()[patchi];
         fvPatchScalarField& pmfp = mfp.boundaryFieldRef()[patchi];
 
         forAll(pTt, facei)

@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2012 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -78,6 +78,7 @@ inline Foam::autoPtr<Foam::perfect2Gas<Specie> > Foam::perfect2Gas<Specie>::New
 template<class Specie>
 inline Foam::scalar Foam::perfect2Gas<Specie>::rho(scalar p, scalar T) const
 {
+    //Info << "rho: "<< p/(this->R()*T) << endl;
     return p/(this->R()*T);
 }
 

@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2012 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -55,7 +55,8 @@ namespace Foam
 
 Foam::wordList Foam::multi2Thermo::het2BoundaryBaseTypes()
 {
-    const volScalarField::Boundary& tbf = this->T_.boundaryField();
+    const volScalarField::Boundary& tbf =
+        this->Tt_.boundaryField();
 
     wordList hbt(tbf.size(), word::null);
 
@@ -86,7 +87,8 @@ Foam::wordList Foam::multi2Thermo::het2BoundaryBaseTypes()
 
 Foam::wordList Foam::multi2Thermo::het2BoundaryTypes()
 {
-    const volScalarField::Boundary& tbf = this->T_.boundaryField();
+    const volScalarField::Boundary& tbf =
+        this->Tt_.boundaryField();
 
     wordList hbt = tbf.types();
 
@@ -128,7 +130,8 @@ Foam::wordList Foam::multi2Thermo::het2BoundaryTypes()
 
 Foam::wordList Foam::multi2Thermo::hevelMix2BoundaryBaseTypes()
 {
-    const volScalarField::Boundary& tbf = this->Tv_.boundaryField();
+    const volScalarField::Boundary& tbf =
+        this->Tv_.boundaryField();
 
     wordList hbt(tbf.size(), word::null);
 
@@ -159,7 +162,8 @@ Foam::wordList Foam::multi2Thermo::hevelMix2BoundaryBaseTypes()
 
 Foam::wordList Foam::multi2Thermo::hevelMix2BoundaryTypes()
 {
-    const volScalarField::Boundary& tbf = this->Tv_.boundaryField();
+    const volScalarField::Boundary& tbf =
+        this->Tv_.boundaryField();
 
     wordList hbt = tbf.types();
 
@@ -203,7 +207,7 @@ Foam::wordList Foam::multi2Thermo::hevelMix2BoundaryTypes()
 Foam::multi2Thermo::multi2Thermo(const fvMesh& mesh, const word& phaseName)
 :
     fluid2Thermo(mesh, phaseName),
-
+      
     twoTemperatureDictionary_
     (
         IOobject
@@ -219,21 +223,21 @@ Foam::multi2Thermo::multi2Thermo(const fvMesh& mesh, const word& phaseName)
             IOobject::NO_WRITE
         )
     ),
-
-    Tov_
+        
+    Tt_
     (
         IOobject
         (
-            phasePropertyName("Tov"),
+            phasePropertyName("Tt"),
             mesh.time().timeName(),
             mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
+            IOobject::READ_IF_PRESENT,
+            IOobject::AUTO_WRITE
         ),
         mesh,
         dimTemperature
     ),
-
+    
     Tv_
     (
         IOobject
@@ -247,7 +251,23 @@ Foam::multi2Thermo::multi2Thermo(const fvMesh& mesh, const word& phaseName)
         mesh,
         dimTemperature
     ),
-
+    
+    het_
+    (
+        IOobject
+        (
+            phasePropertyName("het"),
+            mesh.time().timeName(),
+            mesh,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh,
+        dimEnergy/dimMass,
+        this->het2BoundaryTypes(),
+        this->het2BoundaryBaseTypes()
+    ),
+    
     hevMix_
     (
         IOobject
@@ -261,7 +281,7 @@ Foam::multi2Thermo::multi2Thermo(const fvMesh& mesh, const word& phaseName)
         mesh,
         dimEnergy/dimMass
     ),
-
+    
     heelMix_
     (
         IOobject
@@ -274,104 +294,6 @@ Foam::multi2Thermo::multi2Thermo(const fvMesh& mesh, const word& phaseName)
         ),
         mesh,
         dimEnergy/dimMass
-    ),
-
-    CvtrMix_
-    (
-        IOobject
-        (
-            phasePropertyName("Cvtr"),
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimEnergy/dimMass/dimTemperature
-    ),
-    
-    CptrMix_
-    (
-        IOobject
-        (
-            phasePropertyName("Cptr"),
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimEnergy/dimMass/dimTemperature
-    ),
-    
-    CvvelMix_
-    (
-        IOobject
-        (
-            phasePropertyName("Cvvel"),
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimEnergy/dimMass/dimTemperature
-    ),
-    
-    CpvelMix_
-    (
-        IOobject
-        (
-            phasePropertyName("Cpvel"),
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimEnergy/dimMass/dimTemperature
-    ),
-    
-    RMix_
-    (
-        IOobject
-        (
-            phasePropertyName("Rmix"),
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimEnergy/dimMass/dimTemperature
-    ),
-    
-    CvMix_
-    (
-        IOobject
-        (
-            phasePropertyName("Cv"),
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimEnergy/dimMass/dimTemperature
-    ),
-    
-    CpMix_
-    (
-        IOobject
-        (
-            phasePropertyName("Cp"),
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimEnergy/dimMass/dimTemperature
     ),
     
     zetar_
@@ -387,7 +309,7 @@ Foam::multi2Thermo::multi2Thermo(const fvMesh& mesh, const word& phaseName)
         mesh,
         dimless
     ),
-
+    
     zetav_
     (
         IOobject
@@ -401,7 +323,7 @@ Foam::multi2Thermo::multi2Thermo(const fvMesh& mesh, const word& phaseName)
         mesh,
         dimless
     ),
-
+    
     zetael_
     (
         IOobject
@@ -415,31 +337,35 @@ Foam::multi2Thermo::multi2Thermo(const fvMesh& mesh, const word& phaseName)
         mesh,
         dimless
     ),
-
+    
     downgradeSingleTv_(lookupOrDefault<Switch>("downgradeToSingleTv", false)),
-
-    downgradeSingleTemperature_
-    (
-        lookupOrDefault<Switch>("downgradeToSingleTemperature", false)
-    ),
-
-    downgradeSingleVibMode_
-    (
-        lookupOrDefault<Switch>("downgradeToSingleVibMode", true)
-    ),
-
-    hyLight_(false) // TODO 2021 lookupOrDefault<Switch>("hyLight", true))
+    
+    downgradeSingleTemperature_(lookupOrDefault<Switch>("downgradeToSingleTemperature", false)),
+    
+    downgradeSingleVibMode_(lookupOrDefault<Switch>("downgradeToSingleVibMode", true)),
+    
+    hyLight_(lookupOrDefault<Switch>("hyLight", true))
 {
-    //- het_ volScalaField defined in the constructor of rho2ReactionThermo
-    //  for boundary condition implementation. Indeed, it will change the
-    //  lookup of thermophysicalProperties from objectRegistry from
-    //  multi2Thermo to rho2ReactionThermo
-        
     if(downgradeSingleTv_)
     {
-        //- hevelMix_ volScalaField defined in the constructor of
-        //  rho2ReactionThermo for boundary condition implementation. Same
-        //  reason than for het_
+        // NEW VINCENT 15/02/2017
+        // Defined in the constructor of rho2ReactionThermo
+        // for boundary condition implementation
+        /*hevelMix_ = new volScalarField
+        (
+            IOobject
+            (
+                phasePropertyName("hevel"),
+                mesh.time().timeName(),
+                mesh,
+                IOobject::NO_READ,
+                IOobject::NO_WRITE
+            ),
+            mesh,
+            dimEnergy/dimMass,
+            this->hevelMix2BoundaryTypes(),
+            this->hevelMix2BoundaryBaseTypes()
+        );*/
     }
     else
     {
@@ -468,7 +394,7 @@ Foam::multi2Thermo::multi2Thermo
 )
 :
     fluid2Thermo(mesh, dict, phaseName),
-
+    
     twoTemperatureDictionary_
     (
         IOobject
@@ -477,8 +403,7 @@ Foam::multi2Thermo::multi2Thermo
             (
                 fileName(lookup("twoTemperatureDictFile")).substr
                 (
-                    fileName(lookup("twoTemperatureDictFile"))
-                        .find("constant/") + 9
+                    fileName(lookup("twoTemperatureDictFile")).find("constant/") + 9
                 ),
                 phaseName
             ),
@@ -488,21 +413,21 @@ Foam::multi2Thermo::multi2Thermo
             IOobject::NO_WRITE
         )
     ),
-
-    Tov_
+    
+    Tt_
     (
         IOobject
         (
-            phasePropertyName("Tov"),
+            phasePropertyName("Tt"),
             mesh.time().timeName(),
             mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
+            IOobject::READ_IF_PRESENT,
+            IOobject::AUTO_WRITE
         ),
         mesh,
         dimTemperature
     ),
-
+    
     Tv_
     (
         IOobject
@@ -516,7 +441,23 @@ Foam::multi2Thermo::multi2Thermo
         mesh,
         dimTemperature
     ),
-
+    
+    het_
+    (
+        IOobject
+        (
+            phasePropertyName("het"),
+            mesh.time().timeName(),
+            mesh,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh,
+        dimEnergy/dimMass,
+        this->het2BoundaryTypes(),
+        this->het2BoundaryBaseTypes()
+    ),
+    
     hevMix_
     (
         IOobject
@@ -530,7 +471,7 @@ Foam::multi2Thermo::multi2Thermo
         mesh,
         dimEnergy/dimMass
     ),
-
+    
     heelMix_
     (
         IOobject
@@ -543,104 +484,6 @@ Foam::multi2Thermo::multi2Thermo
         ),
         mesh,
         dimEnergy/dimMass
-    ),
-
-    CvtrMix_
-    (
-        IOobject
-        (
-            phasePropertyName("Cvtr"),
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimEnergy/dimMass/dimTemperature
-    ),
-    
-    CptrMix_
-    (
-        IOobject
-        (
-            phasePropertyName("Cptr"),
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimEnergy/dimMass/dimTemperature
-    ),
-    
-    CvvelMix_
-    (
-        IOobject
-        (
-            phasePropertyName("Cvvel"),
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimEnergy/dimMass/dimTemperature
-    ),
-    
-    CpvelMix_
-    (
-        IOobject
-        (
-            phasePropertyName("Cpvel"),
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimEnergy/dimMass/dimTemperature
-    ),
-    
-    RMix_
-    (
-        IOobject
-        (
-            phasePropertyName("Rmix"),
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimEnergy/dimMass/dimTemperature
-    ),
-    
-    CvMix_
-    (
-        IOobject
-        (
-            phasePropertyName("Cv"),
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimEnergy/dimMass/dimTemperature
-    ),
-    
-    CpMix_
-    (
-        IOobject
-        (
-            phasePropertyName("Cp"),
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimEnergy/dimMass/dimTemperature
     ),
     
     zetar_
@@ -656,7 +499,7 @@ Foam::multi2Thermo::multi2Thermo
         mesh,
         dimless
     ),
-
+    
     zetav_
     (
         IOobject
@@ -670,7 +513,7 @@ Foam::multi2Thermo::multi2Thermo
         mesh,
         dimless
     ),
-
+    
     zetael_
     (
         IOobject
@@ -684,31 +527,35 @@ Foam::multi2Thermo::multi2Thermo
         mesh,
         dimless
     ),
-
+    
     downgradeSingleTv_(lookupOrDefault<Switch>("downgradeToSingleTv", false)),
-
-    downgradeSingleTemperature_
-    (
-        lookupOrDefault<Switch>("downgradeToSingleTemperature", false)
-    ),
-
-    downgradeSingleVibMode_
-    (
-        lookupOrDefault<Switch>("downgradeToSingleVibMode", true)
-    ),
-
+    
+    downgradeSingleTemperature_(lookupOrDefault<Switch>("downgradeToSingleTemperature", false)),
+    
+    downgradeSingleVibMode_(lookupOrDefault<Switch>("downgradeToSingleVibMode", true)),
+    
     hyLight_(lookupOrDefault<Switch>("hyLight", true))
 {
-    //- het_ volScalaField defined in the constructor of rho2ReactionThermo
-    //  for boundary condition implementation. Indeed, it will change the
-    //  lookup of thermophysicalProperties from objectRegistry from
-    //  multi2Thermo to rho2ReactionThermo
-        
     if(downgradeSingleTv_)
     {
-        //- hevelMix_ volScalaField defined in the constructor of
-        //  rho2ReactionThermo for boundary condition implementation. Same
-        //  reason than for het_
+        // NEW VINCENT 15/02/2017
+        // Defined in the constructor of rho2ReactionThermo
+        // for boundary condition implementation
+        /*hevelMix_ = new volScalarField
+        (
+            IOobject
+            (
+                phasePropertyName("hevel"),
+                mesh.time().timeName(),
+                mesh,
+                IOobject::NO_READ,
+                IOobject::NO_WRITE
+            ),
+            mesh,
+            dimEnergy/dimMass,
+            this->hevelMix2BoundaryTypes(),
+            this->hevelMix2BoundaryBaseTypes()
+        );*/
     }
     else
     {
@@ -754,111 +601,20 @@ const Foam::multi2Thermo& Foam::multi2Thermo::lookup2Thermo
     const fvPatchScalarField& pf
 )
 {
-    return pf.db().lookupObject<multi2Thermo>(dictName);
+    // NOTE VINCENT 20/02/2016: adapted from basicThermo.C
+    return pf.db().lookupObject<multi2Thermo>(dictName); 
 }
 
 
-const Foam::volScalarField& Foam::multi2Thermo::CvtrMix() const
+const Foam::volScalarField& Foam::multi2Thermo::Tt() const
 {
-    return CvtrMix_;
+    return Tt_;
 }
 
 
-Foam::volScalarField& Foam::multi2Thermo::CvtrMix()
+const Foam::scalarField& Foam::multi2Thermo::Tt(const label patchi) const
 {
-    return CvtrMix_;
-}
-
-
-const Foam::volScalarField& Foam::multi2Thermo::CptrMix() const
-{
-    return CptrMix_;
-}
-
-
-Foam::volScalarField& Foam::multi2Thermo::CptrMix()
-{
-    return CptrMix_;
-}
-
-
-const Foam::volScalarField& Foam::multi2Thermo::CvvelMix() const
-{
-    return CvvelMix_;
-}
-
-
-Foam::volScalarField& Foam::multi2Thermo::CvvelMix()
-{
-    return CvvelMix_;
-}
-
-
-const Foam::volScalarField& Foam::multi2Thermo::CpvelMix() const
-{
-    return CpvelMix_;
-}
-
-
-Foam::volScalarField& Foam::multi2Thermo::CpvelMix()
-{
-    return CpvelMix_;
-}
-
-
-const Foam::volScalarField& Foam::multi2Thermo::CvMix() const
-{
-    return CvMix_;
-}
-
-
-Foam::volScalarField& Foam::multi2Thermo::CvMix()
-{
-    return CvMix_;
-}
-
-
-const Foam::volScalarField& Foam::multi2Thermo::CpMix() const
-{
-    return CpMix_;
-}
-
-
-const Foam::scalarField& Foam::multi2Thermo::CpMix(const label patchi) const
-{
-    return CpMix_.boundaryField()[patchi];
-}
-
-
-Foam::volScalarField& Foam::multi2Thermo::CpMix()
-{
-    return CpMix_;
-}
-
-
-Foam::tmp<Foam::volScalarField> Foam::multi2Thermo::Cp_t() const
-{
-    tmp<volScalarField> tCptr(CptrMix());
-
-    return tCptr;
-}
-
-
-const Foam::volScalarField& Foam::multi2Thermo::Tov() const
-{
-    return Tov_;
-}
-
-
-const Foam::scalarField& Foam::multi2Thermo::Tov(const label patchi) const
-{
-    return Tov_.boundaryField()[patchi];
-}
-
-
-Foam::volScalarField& Foam::multi2Thermo::Tov()
-{
-    return Tov_;
+    return Tt_.boundaryField()[patchi];
 }
 
 
@@ -874,63 +630,9 @@ const Foam::scalarField& Foam::multi2Thermo::Tv(const label patchi) const
 }
 
 
-Foam::volScalarField& Foam::multi2Thermo::Tv()
-{
-    return Tv_;
-}
-
-
-const Foam::volScalarField& Foam::multi2Thermo::RMix() const
-{
-    return RMix_;
-}
-
-
-const Foam::scalarField& Foam::multi2Thermo::RMix(const label patchi) const
-{
-    return RMix_.boundaryField()[patchi];
-}
-
-
-Foam::volScalarField& Foam::multi2Thermo::RMix()
-{
-    return RMix_;
-}
-
-
 const Foam::volScalarField& Foam::multi2Thermo::zetar() const
 {
     return zetar_;
-}
-
-
-Foam::volScalarField& Foam::multi2Thermo::zetar()
-{
-    return zetar_;
-}
-
-
-const Foam::volScalarField& Foam::multi2Thermo::zetav() const
-{
-    return zetav_;
-}
-
-
-Foam::volScalarField& Foam::multi2Thermo::zetav()
-{
-    return zetav_;
-}
-
-
-const Foam::volScalarField& Foam::multi2Thermo::zetael() const
-{
-    return zetael_;
-}
-
-
-Foam::volScalarField& Foam::multi2Thermo::zetael()
-{
-    return zetael_;
 }
 
 

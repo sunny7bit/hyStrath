@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2012 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ License
 #include "addToRunTimeSelectionTable.H"
 #include "fvPatchFieldMapper.H"
 #include "volFields.H"
-#include "multi2Thermo.H"
+#include "multi2Thermo.H" // NEW VINCENT
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -38,8 +38,7 @@ gradient2TREnergyFvPatchScalarField
     const DimensionedField<scalar, volMesh>& iF
 )
 :
-    fixedGradientFvPatchScalarField(p, iF),
-    thermo_(rho2ReactionThermo::lookup2ReactionThermo(*this))
+    fixedGradientFvPatchScalarField(p, iF)
 {} // Only this constructor is used
 
 
@@ -52,8 +51,7 @@ gradient2TREnergyFvPatchScalarField
     const fvPatchFieldMapper& mapper
 )
 :
-    fixedGradientFvPatchScalarField(ptf, p, iF, mapper),
-    thermo_(rho2ReactionThermo::lookup2ReactionThermo(*this))
+    fixedGradientFvPatchScalarField(ptf, p, iF, mapper)
 {}
 
 
@@ -65,8 +63,7 @@ gradient2TREnergyFvPatchScalarField
     const dictionary& dict
 )
 :
-    fixedGradientFvPatchScalarField(p, iF, dict),
-    thermo_(rho2ReactionThermo::lookup2ReactionThermo(*this))
+    fixedGradientFvPatchScalarField(p, iF, dict)
 {}
 
 
@@ -76,8 +73,7 @@ gradient2TREnergyFvPatchScalarField
     const gradient2TREnergyFvPatchScalarField& tppsf
 )
 :
-    fixedGradientFvPatchScalarField(tppsf),
-    thermo_(rho2ReactionThermo::lookup2ReactionThermo(*this))
+    fixedGradientFvPatchScalarField(tppsf)
 {}
 
 
@@ -88,8 +84,7 @@ gradient2TREnergyFvPatchScalarField
     const DimensionedField<scalar, volMesh>& iF
 )
 :
-    fixedGradientFvPatchScalarField(tppsf, iF),
-    thermo_(rho2ReactionThermo::lookup2ReactionThermo(*this))
+    fixedGradientFvPatchScalarField(tppsf, iF)
 {}
 
 
@@ -101,53 +96,25 @@ void Foam::gradient2TREnergyFvPatchScalarField::updateCoeffs()
     {
         return;
     }
+    
+    //Info << "gradient2TREnergy is used for patch called " << patch().name() << endl;
 
-//    Info<< "gradient2TREnergy is used for patch called "
-//        << patch().name() << endl;
-
-    const multi2Thermo& multiThermo = multi2Thermo::lookup2Thermo(*this);
+    const multi2Thermo& thermo = multi2Thermo::lookup2Thermo(*this);
     const label patchi = patch().index();
 
-    const scalarField& pw = multiThermo.p().boundaryField()[patchi];
-
-    fvPatchScalarField& Tw =
-        const_cast<fvPatchScalarField&>
+    const scalarField& pw = thermo.p().boundaryField()[patchi];
+    
+    fvPatchScalarField& Ttw =
+        const_cast<fvPatchScalarField&>(thermo.Tt().boundaryField()[patchi]);
+    Ttw.evaluate();
+    
+    gradient() = thermo.Cv_t(pw, Ttw, patchi)*Ttw.snGrad()
+      + patch().deltaCoeffs()*
         (
-            multiThermo.T().boundaryField()[patchi]
+            thermo.het(pw, Ttw, patchi)
+          - thermo.het(pw, Ttw, patch().faceCells())
         );
-    Tw.evaluate();
-
-    tmp<scalarField> thet(new scalarField(pw.size()));
-    tmp<scalarField> thetfC(new scalarField(pw.size()));
-    tmp<scalarField> tcvtTw(new scalarField(pw.size()));
-    
-    scalarField& het = thet.ref();
-    scalarField& hetfC = thetfC.ref();
-    scalarField& cvtTw = tcvtTw.ref();
-    
-    het = 0.0;
-    hetfC = 0.0;
-    cvtTw = 0.0;
-
-    forAll(thermo_.composition().Y(), speciei)
-    {
-        fvPatchScalarField& spYw =
-            const_cast<fvPatchScalarField&>
-            (
-                thermo_.composition().Y(speciei).boundaryField()[patchi]
-            );
-        spYw.evaluate();
-
-        het += spYw*thermo_.composition().het(speciei, pw, Tw, patchi);
-        hetfC += spYw
-            *thermo_.composition().het(speciei, pw, Tw, patch().faceCells());
-        cvtTw += spYw*thermo_.composition().Cv_vel(speciei, pw, Tw, patchi);
-    }
-    
-    cvtTw *= Tw.snGrad();
-    
-    gradient() = tcvtTw + patch().deltaCoeffs()*(thet - thetfC);
-    
+        
     fixedGradientFvPatchScalarField::updateCoeffs();
 }
 

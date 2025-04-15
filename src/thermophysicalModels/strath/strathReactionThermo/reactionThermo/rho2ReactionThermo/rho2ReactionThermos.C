@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2012-2013 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ License
 #include "janafThermo.H"
 
 #include "decoupledEnergyModesThermo.H"
+#include "sensible2Enthalpy.H"
 #include "multiThermo.H"
 
 #include "constantTransport.H"
@@ -40,7 +41,7 @@ License
 #include "BlottnerEuckenTransport.H"
 #include "powerLawEuckenTransport.H"
 #include "CEATransport.H"
-//#include "tabulatedTransport.H" // TODO WON'T WORK AT THE MOMENT
+//#include "tabulatedTransport.H" // TODO NEW VINCENT BUT CAN'T WORK AT THE MOMENT
 
 #include "multi2ComponentMixture.H"
 #include "reacting2Mixture.H"
@@ -54,7 +55,7 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-// Multi-component reaction thermo based on sensible internal energy
+// Multi-component reaction thermo
 
 make2ReactionMixtureThermo
 (
@@ -99,6 +100,53 @@ make2ReactionMixtureThermo
     heRho2Thermo,
     reacting2Mixture,
     demCEAGasEThermoPhysicsH2TGD
+);
+
+// Multi-component reaction thermo
+
+make2ReactionMixtureThermo
+(
+    rho2Thermo,
+    rho2ReactionThermo,
+    heRho2Thermo,
+    reacting2Mixture,
+    demConstGasHThermoPhysicsH2TGD
+);
+
+make2ReactionMixtureThermo
+(
+    rho2Thermo,
+    rho2ReactionThermo,
+    heRho2Thermo,
+    reacting2Mixture,
+    demGasHThermoPhysicsH2TGD
+);
+
+make2ReactionMixtureThermo
+(
+    rho2Thermo,
+    rho2ReactionThermo,
+    heRho2Thermo,
+    reacting2Mixture,
+    demBEGasHThermoPhysicsH2TGD
+);
+
+make2ReactionMixtureThermo
+(
+    rho2Thermo,
+    rho2ReactionThermo,
+    heRho2Thermo,
+    reacting2Mixture,
+    demPLEGasHThermoPhysicsH2TGD
+);
+
+make2ReactionMixtureThermo
+(
+    rho2Thermo,
+    rho2ReactionThermo,
+    heRho2Thermo,
+    reacting2Mixture,
+    demCEAGasHThermoPhysicsH2TGD
 );
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

@@ -4,18 +4,16 @@
 
 // Mixture fields
 PtrList<volScalarField>& Y = composition.Y();
-PtrList<volScalarField>& pD = composition.pD();
+PtrList<volScalarField>& pD = composition.pD(); // Partial densities
 
-Switch containsElectrons = false;
-label posElectrons = -1;
+bool containsElectrons = false;
 if (composition.contains("e-"))
 {
-    containsElectrons = true;
-    posElectrons = composition.electronId();
+    containsElectrons = true; 
 }
 
-/*Generic multi-variate discretisation scheme class which may be
-instantiated for any of the NVD, CNVD or NVDV schemes.*/
+// Generic multi-variate discretisation scheme class which may be
+// instantiated for any of the NVD, CNVD or NVDV schemes.
 multivariateSurfaceInterpolationScheme<scalar>::fieldTable fields;
 forAll(Y, i)
 {
@@ -54,22 +52,5 @@ autoPtr<multiSpeciesTransportModel> speciesDiffusion
     )
 );
 
-word speciesDiffusionName =
-    thermo.transportDictionary().subDict("transportModels")
-        .lookupOrDefault<word>("multiSpeciesTransport", "noSpeciesDiffusion");
-        
-Switch solveSpeciesEqns = false;
-if
-(
-    (
-        speciesDiffusionName != "noSpeciesDiffusion" 
-     or reaction->active()
-     or injectors
-    )
-  and
-    Y.size() > 1
-)
-{
-    solveSpeciesEqns = true;
-}        
+word speciesDiffusionName = thermo.transportDictionary().subDict("transportModels").lookup("multiSpeciesTransport");
 

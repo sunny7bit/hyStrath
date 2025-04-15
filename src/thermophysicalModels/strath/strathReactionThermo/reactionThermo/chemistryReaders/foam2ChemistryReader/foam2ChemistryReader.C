@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -42,39 +42,6 @@ Foam::speciesTable& Foam::foam2ChemistryReader<ThermoType>::setSpecies
 }
 
 
-template<class ThermoType>
-void Foam::foam2ChemistryReader<ThermoType>::removeAbsentSpecies()
-{
-    label j = 0;
-    const label nSpecies = thermoDict_.keys().size();
-    
-    for(label i = 0; i<nSpecies; ++i)
-    {
-        bool speciesNotInMixture = true;
-        
-        forAll(speciesTable_, speciei)
-        {
-            if (thermoDict_.keys()[j] == speciesTable_[speciei])
-            {
-                speciesNotInMixture = false;
-                break;
-            }
-        }
-        
-        if (speciesNotInMixture)
-        {
-            word speciesName = thermoDict_.keys()[j];
-            thermoDict_.remove(speciesName);
-            speciesThermo_.erase(speciesName);
-        }
-        else
-        {
-            j += 1;
-        }
-    }
-}
-
-
 // * * * * * * * * * * * * * * * * Constructor * * * * * * * * * * * * * * * //
 
 template<class ThermoType>
@@ -103,9 +70,7 @@ Foam::foam2ChemistryReader<ThermoType>::foam2ChemistryReader
     speciesTable_(setSpecies(chemDict_, species)),
     speciesThermo_(thermoDict_),
     reactions_(speciesTable_, speciesThermo_, chemDict_)
-{
-    removeAbsentSpecies();
-}
+{}
 
 
 template<class ThermoType>
@@ -130,12 +95,10 @@ Foam::foam2ChemistryReader<ThermoType>::foam2ChemistryReader
             fileName(thermoDict.lookup("foamChemistryThermoFile")).expand()
         )()
     ),
-    speciesTable_(setSpecies(chemDict_, species)),
     speciesThermo_(thermoDict_),
+    speciesTable_(setSpecies(chemDict_, species)),
     reactions_(speciesTable_, speciesThermo_, chemDict_)
-{
-    removeAbsentSpecies();
-}
+{}
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

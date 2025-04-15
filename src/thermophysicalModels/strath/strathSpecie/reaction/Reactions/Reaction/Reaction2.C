@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2012 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -168,7 +168,7 @@ Foam::Reaction2<Reaction2Thermo>::Reaction2
     )
         << "NB VINCENT: This constructor should not be used"
         << exit(FatalError);
-
+    
     setThermo(thermoDatabase);
 }
 
@@ -351,7 +351,7 @@ Foam::Reaction2<Reaction2Thermo>::Reaction2
     )
         << "NB VINCENT: This constructor should not be used"
         << exit(FatalError);
-
+    
     setLRhs(is, species, lhs_, rhs_);
     setThermo(thermoDatabase);
 }
@@ -369,14 +369,14 @@ Foam::Reaction2<Reaction2Thermo>::Reaction2
     name_(dict.dictName()),
     species_(species)
 {
-    // NB: this constructor is used in the beginning of a simulation
-    word controllingTemperature =
+    // NB VINCENT: this constructor is used in the beginning of a simulation
+    word controllingTemperature = 
         dict.lookupOrDefault<word>
         (
             "controlT",
             "transrotational"
         );
-
+        
     if (controllingTemperature == "chargeExchange")
     {
         controlT_ = chargeExchange;
@@ -422,12 +422,12 @@ Foam::Reaction2<Reaction2Thermo>::Reaction2
         )   << "Controlling temperature type "
             << controllingTemperature << "is invalid." << nl << nl
             << "Valid controlling temperature types are: " << nl
-            << "  chargeExchange, dissociation, exchange, impactDissociation,"
+            << "  chargeExchange, dissociation, exchange, impactDissociation," 
             << nl << "  impactIonisation, associativeIonisation, "
             << "transrotational, vibrational."
             << exit(FatalIOError);
     }
-
+    
     setLRhs
     (
         IStringStream(dict.lookup("reaction"))(),
@@ -435,7 +435,7 @@ Foam::Reaction2<Reaction2Thermo>::Reaction2
         lhs_,
         rhs_
     );
-
+    
     setThermo(thermoDatabase);
 }
 

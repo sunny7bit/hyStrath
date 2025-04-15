@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2012 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ License
 
 #include "fvPatchFieldMapper.H"
 #include "volFields.H"
-#include "multi2Thermo.H"
+#include "multi2Thermo.H" // NEW VINCENT
 #include "addToRunTimeSelectionTable.H"
 #include "fixed2TREnergyFvPatchScalarField.H"
 
@@ -38,8 +38,7 @@ fixed2TREnergyFvPatchScalarField
     const DimensionedField<scalar, volMesh>& iF
 )
 :
-    fixedValueFvPatchScalarField(p, iF),
-    thermo_(rho2ReactionThermo::lookup2ReactionThermo(*this))
+    fixedValueFvPatchScalarField(p, iF)
 {} // Only this constructor is used at run-time
 
 
@@ -52,8 +51,7 @@ fixed2TREnergyFvPatchScalarField
     const fvPatchFieldMapper& mapper
 )
 :
-    fixedValueFvPatchScalarField(ptf, p, iF, mapper),
-    thermo_(rho2ReactionThermo::lookup2ReactionThermo(*this))
+    fixedValueFvPatchScalarField(ptf, p, iF, mapper)
 {}
 
 
@@ -65,8 +63,7 @@ fixed2TREnergyFvPatchScalarField
     const dictionary& dict
 )
 :
-    fixedValueFvPatchScalarField(p, iF, dict),
-    thermo_(rho2ReactionThermo::lookup2ReactionThermo(*this))
+    fixedValueFvPatchScalarField(p, iF, dict)
 {}
 
 
@@ -76,8 +73,7 @@ fixed2TREnergyFvPatchScalarField
     const fixed2TREnergyFvPatchScalarField& tppsf
 )
 :
-    fixedValueFvPatchScalarField(tppsf),
-    thermo_(rho2ReactionThermo::lookup2ReactionThermo(*this))
+    fixedValueFvPatchScalarField(tppsf)
 {}
 
 
@@ -88,8 +84,7 @@ fixed2TREnergyFvPatchScalarField
     const DimensionedField<scalar, volMesh>& iF
 )
 :
-    fixedValueFvPatchScalarField(tppsf, iF),
-    thermo_(rho2ReactionThermo::lookup2ReactionThermo(*this))
+    fixedValueFvPatchScalarField(tppsf, iF)
 {}
 
 
@@ -102,30 +97,18 @@ void Foam::fixed2TREnergyFvPatchScalarField::updateCoeffs()
         return;
     }
 
-//    Info<< "fixed2TREnergy is used for patch called "
-//        << patch().name() << endl;
-
-    const multi2Thermo& multiThermo = multi2Thermo::lookup2Thermo(*this);
+    //Info << "fixed2TREnergy is used for patch called " << patch().name() << endl; 
+    
+    const multi2Thermo& thermo = multi2Thermo::lookup2Thermo(*this);
     const label patchi = patch().index();
 
-    const fvPatchScalarField& pw = multiThermo.p().boundaryField()[patchi];
-    const fvPatchScalarField& Tw = multiThermo.T().boundaryField()[patchi];
-
-    tmp<scalarField> thet(new scalarField(pw.size()));
-    scalarField& het = thet.ref();
-
-    het = 0.0;
+    const scalarField& pw = thermo.p().boundaryField()[patchi];
     
-    forAll(thermo_.composition().Y(), speciei)
-    {
-        const fvPatchScalarField& spYw =
-            thermo_.composition().Y(speciei).boundaryField()[patchi];
-
-        het += spYw*thermo_.composition().het(speciei, pw, Tw, patchi);
-    }
-
-    // Force an assignment, overriding fixedValue status
-    operator==(het);
+    fvPatchScalarField& Ttw =
+        const_cast<fvPatchScalarField&>(thermo.Tt().boundaryField()[patchi]);
+    Ttw.evaluate();
+    
+    operator==(thermo.het(pw, Ttw, patchi)); // Force an assignment, overriding fixedValue status
 
     fixedValueFvPatchScalarField::updateCoeffs();
 }

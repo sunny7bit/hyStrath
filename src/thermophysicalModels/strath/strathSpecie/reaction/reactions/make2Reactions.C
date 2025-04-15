@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2012-2013 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -28,11 +28,13 @@ License
 
 #include "Arrhenius2ReactionRate.H"
 #include "HoffertLienReactionRate.H"
+#include "ShatalovReactionRate.H"
 #include "subArrhenius2ReactionRate.H"
 #include "ImpactIonisationArrhenius2ReactionRate.H"
 #include "infiniteReactionRate.H"
 #include "LandauTellerReactionRate.H"
 #include "thirdBodyArrheniusReactionRate.H"
+#include "thirdBodyShatalovReactionRate.H"
 
 #include "ChemicallyActivatedReactionRate.H"
 #include "JanevReactionRate.H"
@@ -54,11 +56,13 @@ License
                                                                                \
     makeIRNReactions(MultiThermo, Arrhenius2ReactionRate)                      \
     makeIRNReactions(MultiThermo, HoffertLienReactionRate)                     \
+    makeIRNReactions(MultiThermo, ShatalovReactionRate)                        \
     makeIRNReactions(MultiThermo, subArrhenius2ReactionRate)                   \
     makeIRNReactions(MultiThermo, ImpactIonisationArrhenius2ReactionRate)      \
     makeIRNReactions(MultiThermo, infiniteReactionRate)                        \
     makeIRNReactions(MultiThermo, LandauTellerReactionRate)                    \
     makeIRNReactions(MultiThermo, thirdBodyArrheniusReactionRate)              \
+    makeIRNReactions(MultiThermo, thirdBodyShatalovReactionRate)               \
                                                                                \
     makeIRReactions(MultiThermo, JanevReactionRate)                            \
     makeIRReactions(MultiThermo, powerSeriesReactionRate)                      \
@@ -74,6 +78,13 @@ License
     (                                                                          \
        MultiThermo,                                                            \
        HoffertLienReactionRate,                                                \
+       LindemannFallOffFunction                                                \
+    )                                                                          \
+                                                                               \
+    makePressureDependentReactions                                             \
+    (                                                                          \
+       MultiThermo,                                                            \
+       ShatalovReactionRate,                                                   \
        LindemannFallOffFunction                                                \
     )                                                                          \
                                                                                \
@@ -103,15 +114,26 @@ License
 
 namespace Foam
 {
+    // sensible enthalpy based reactions
+    makeReactions(demConstGasHThermoPhysicsH2TGD, demConstGasHReactionH2TGD);
+    
+    makeReactions(demGasHThermoPhysicsH2TGD, demGasHReactionH2TGD);
+    
+    makeReactions(demBEGasHThermoPhysicsH2TGD, demBEGasHReactionH2TGD);
+    
+    makeReactions(demPLEGasHThermoPhysicsH2TGD, demPLEGasHReactionH2TGD);
+    
+    makeReactions(demCEAGasHThermoPhysicsH2TGD, demCEAGasHReactionH2TGD);
+    
     // sensible internal energy based reactions
     makeReactions(demConstGasEThermoPhysicsH2TGD, demConstGasEReactionH2TGD);
-
+    
     makeReactions(demGasEThermoPhysicsH2TGD, demGasEReactionH2TGD);
-
+    
     makeReactions(demBEGasEThermoPhysicsH2TGD, demBEGasEReactionH2TGD);
-
+    
     makeReactions(demPLEGasEThermoPhysicsH2TGD, demPLEGasEReactionH2TGD);
-
+    
     makeReactions(demCEAGasEThermoPhysicsH2TGD, demCEAGasEReactionH2TGD);
 }
 

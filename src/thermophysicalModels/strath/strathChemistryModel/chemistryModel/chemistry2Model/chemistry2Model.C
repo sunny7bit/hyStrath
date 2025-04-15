@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2014 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -45,23 +45,17 @@ Foam::chemistry2Model<CompType, ThermoType>::chemistry2Model
     specieThermo_
     (
         dynamic_cast<const reacting2Mixture<ThermoType>&>
-        (
-            this->thermo()
-        ).speciesData()
+            (this->thermo()).speciesData()
     ),
 
     nSpecie_(Y_.size()),
     nReaction_(reactions_.size()),
     Treact_(CompType::template lookupOrDefault<scalar>("Treact", 0.0)),
-
+    
     RR_(nSpecie_),
-    RRf_(),
-    RRfiir_(),
-    iirIds_(),
-    posNeutralSpecies_(),
-    posIonisedSpecies_(),
-
-    computeVESourceTerm_(false),
+    RRf_(nSpecie_), // NEW VINCENT 25/03/2016
+    RRIonisedAtomseii_(2),  // NEW VINCENT 17/02/2017
+    
     preferentialFactor_(nSpecie_),
     simpleHarmonicOscillatorVibCutOff_
     (
@@ -90,113 +84,77 @@ Foam::chemistry2Model<CompType, ThermoType>::chemistry2Model
         );
     }
     
+    // NEW VINCENT 25/03/2016 *************************************************
     // create the fields for the forward chemistry sources
-    if (this->CVModel_ == "CVDV")
+    forAll(RRf_, fieldI)
     {
-        RRf_.setSize(nSpecie_);
-        
-        forAll(RRf_, fieldI)
-        {
-            RRf_.set
+        RRf_.set
+        (
+            fieldI,
+            new DimensionedField<scalar, volMesh>
             (
-                fieldI,
-                new DimensionedField<scalar, volMesh>
+                IOobject
                 (
-                    IOobject
-                    (
-                        "RRfwd_" + Y_[fieldI].name(),
-                        mesh.time().timeName(),
-                        mesh,
-                        IOobject::NO_READ,
-                        IOobject::NO_WRITE
-                    ),
+                    "RRfwd_" + Y_[fieldI].name(),
+                    mesh.time().timeName(),
                     mesh,
-                    dimensionedScalar("zero", dimMass/dimVolume/dimTime, 0.0)
-                )
-            );
-        }
+                    IOobject::NO_READ,
+                    IOobject::NO_WRITE
+                ),
+                mesh,
+                dimensionedScalar("zero", dimMass/dimVolume/dimTime, 0.0)
+            )
+        );
     }
     
-    // record the indices of the impact ionisation reactions in the reaction
-    // list and mark the position of the neutral/ionised species involved
-    forAll(reactions_, r)
+    forAll(RRIonisedAtomseii_, fieldI) // NEW VINCENT 17/02/2017
     {
-        const Foam::ControllingTemperatureType controllingTemp = 
-            reactions_[r].controlT();
-        
-        if (controllingTemp == impactIonisation)
-        {
-            const label prevSize = iirIds_.size();
-            iirIds_.resize(prevSize + 1);
-            iirIds_[prevSize] = r;
-            
-            posNeutralSpecies_.resize(prevSize + 1);
-            posIonisedSpecies_.resize(prevSize + 1);
-            posNeutralSpecies_[prevSize] = reactions_[r].lhs()[0].index;
-            posIonisedSpecies_[prevSize] = reactions_[r].rhs()[0].index;
-        }
-    }
-    
-    if (iirIds_.size() != 0)
-    {
-        RRfiir_.setSize(iirIds_.size());
-        
-        forAll(RRfiir_, fieldI)
-        {
-            RRfiir_.set
+        RRIonisedAtomseii_.set
+        (
+            fieldI,
+            new DimensionedField<scalar, volMesh>
             (
-                fieldI,
-                new DimensionedField<scalar, volMesh>
+                IOobject
                 (
-                    IOobject
-                    (
-                        "RRfwdiir_" + Y_[posIonisedSpecies_[fieldI]].name(),
-                        mesh.time().timeName(),
-                        mesh,
-                        IOobject::NO_READ,
-                        IOobject::NO_WRITE
-                    ),
+                    "RRIonisedAtomseii_" + name(fieldI),
+                    mesh.time().timeName(),
                     mesh,
-                    dimensionedScalar("zero", dimMass/dimVolume/dimTime, 0.0)
-                )
-            );
-        }
+                    IOobject::NO_READ,
+                    IOobject::NO_WRITE
+                ),
+                mesh,
+                dimensionedScalar("zero", dimMass/dimVolume/dimTime, 0.0)
+            )
+        );
     }
     
-    if (this->CVModel_ != "none")
-    {
-        computeVESourceTerm_ =
-            this->subDict("chemistryVibrationCoupling")
-                .lookupOrDefault("computeSourceTerm", true);
-    }
-    
-    if (this->CVModel_ == "ParkTTv")
+    if(this->CVModel_ == "ParkTTv")
     {
         FixedList<scalar, 2> initList(0.0);
-        if (this->preferentialModel_ == "constant")
+        if(this->preferentialModel_ == "constant")
         {
-            initList[1] =
+            initList[1] = 
                 readScalar
                 (
                     this->subDict("chemistryVibrationCoupling")
                    .subDict(this->CVModel_ + "Coeffs")
                    .subDict("preferentialModel").lookup("constantFactor")
                 );
-        }
+        }    
         forAll(preferentialFactor_, speciei)
         {
-            if (this->preferentialModel_ == "constant")
+            if(this->preferentialModel_ == "constant")
             {
                 preferentialFactor_.set
                 (
                     speciei, new FixedList<scalar, 2>(initList)
                 );
             }
-            else if (this->preferentialModel_ == "lineFitted")
+            else if(this->preferentialModel_ == "lineFitted")
             {
                 preferentialFactor_.set
                 (
-                    speciei,
+                    speciei, 
                     new FixedList<scalar, 2>
                     (
                         this->subDict("chemistryVibrationCoupling")
@@ -209,22 +167,15 @@ Foam::chemistry2Model<CompType, ThermoType>::chemistry2Model
             }
         }
     }
-    else if (this->CVModel_ == "CVDV")
+    else if(this->CVModel_ == "CVDV")
     {
-        reciprocalUFactor_ = 1.0
-            / readScalar
-              (
-                  this->subDict("chemistryVibrationCoupling")
-                      .subDict(this->CVModel_ + "Coeffs")
-                      .lookup("reciprocalU")
-              );
-
-        forAll(simpleHarmonicOscillatorVibCutOff_, mol)
-        {
-            // Thivet 1991, p. 2802
+        reciprocalUFactor_ = 1.0/readScalar(this->subDict("chemistryVibrationCoupling").subDict(this->CVModel_ + "Coeffs").lookup("reciprocalU"));
+        
+        forAll(simpleHarmonicOscillatorVibCutOff_, speciei) 
+        {   
             simpleHarmonicOscillatorVibCutOff_.set
             (
-                mol,
+                speciei, 
                 new label
                 (
                     this->subDict("chemistryVibrationCoupling")
@@ -232,21 +183,16 @@ Foam::chemistry2Model<CompType, ThermoType>::chemistry2Model
                     .subDict("simpleHarmonicOscillatorVibCutOff")
                     .lookupOrDefault
                     (
-                        this->thermo().composition().solvedVibEqSpecies()[mol],
-                        1 + label
-                            (
-                                specieThermo_[mol].dissociationPotential()
-                              / (
-                                    specieThermo_[mol].R()
-                                  * specieThermo_[mol].vibrationalList()[1]
-                                )
-                            )
+                        this->thermo().composition().solvedVibEqSpecies()[speciei], 
+                        1 + int(specieThermo_[speciei].dissociationPotential()
+                        /(specieThermo_[speciei].R()*specieThermo_[speciei].vibrationalList()[1])) // Thivet 1991, p. 2802
                     )
                 )
             );
-        }
+        }  
     }
-
+    // END NEW VINCENT 25/03/2016 *********************************************   
+    
     Info<< "chemistry2Model: Number of species = " << nSpecie_
         << " and reactions = " << nReaction_ << endl;
 }
@@ -267,7 +213,7 @@ Foam::chemistry2Model<CompType, ThermoType>::omega
 (
     const scalarField& c,
     const scalar T,
-    const scalar Tv,
+    const scalar Tv, // NEW VINCENT 
     const scalar p
 ) const
 {
@@ -285,7 +231,7 @@ Foam::chemistry2Model<CompType, ThermoType>::omega
         scalar omegai = omega
         (
             R, c, T, Tv, p, pf, cf, lRef, pr, cr, rRef
-        );
+        ); // MODIFIED VINCENT
 
         forAll(R.lhs(), s)
         {
@@ -312,7 +258,8 @@ Foam::scalar Foam::chemistry2Model<CompType, ThermoType>::omegaI
     const label index,
     const scalarField& c,
     const scalar T,
-    const scalarList& spTv,
+    const scalar Tv, // NEW VINCENT
+    const List<scalar>& spTv, // NEW VINCENT 
     const scalar p,
     scalar& pf,
     scalar& cf,
@@ -322,20 +269,22 @@ Foam::scalar Foam::chemistry2Model<CompType, ThermoType>::omegaI
     label& rRef
 ) const
 {
-    // PRINTED = TRUE
+    // PRINTED = YES
     const Reaction2<ThermoType>& R = reactions_[index];
-    scalar w = omega(R, c, T, spTv, p, pf, cf, lRef, pr, cr, rRef);
+    scalar w = omega(R, c, T, Tv, spTv, p, pf, cf, lRef, pr, cr, rRef); // MODIFIED VINCENT
     return(w);
 }
 
 
 template<class CompType, class ThermoType>
-Foam::scalar Foam::chemistry2Model<CompType, ThermoType>::omega
+Foam::scalar Foam::chemistry2Model<CompType, ThermoType>::omega 
+// NB VINCENT: overloaded for Tv[speciei]
 (
     const Reaction2<ThermoType>& R,
     const scalarField& c,
     const scalar T,
-    const scalarList& spTv,
+    const scalar Tv, // NEW VINCENT
+    const List<scalar>& spTv, // NEW VINCENT 
     const scalar p,
     scalar& pf,
     scalar& cf,
@@ -345,23 +294,23 @@ Foam::scalar Foam::chemistry2Model<CompType, ThermoType>::omega
     label& rRef
 ) const
 {
-    // PRINTED = TRUE
+    // PRINTED = YES
     scalarField c2(nSpecie_, 0.0);
     for (label i = 0; i < nSpecie_; i++)
     {
         c2[i] = max(0.0, c[i]);
     }
 
+    // NEW VINCENT ************************************************************
     scalar kf = 0;
     scalar kr = 0;
-
-    if (this->CVModel_ == "ParkTTv")
+    
+    if(this->CVModel_ == "ParkTTv")
     {
-        const Foam::ControllingTemperatureType
+        const Foam::ControllingTemperatureType 
             controllingTemperature = R.controlT();
-        scalar colTf = 0.0;
-        scalar colTr = 0.0;
-
+        scalar colTf = 0.0, colTr = 0.0;
+        
         switch(controllingTemperature)
         {
             case chargeExchange:
@@ -374,16 +323,15 @@ Foam::scalar Foam::chemistry2Model<CompType, ThermoType>::omega
                 // for spTv[]
                 colTf = pow(T, this->exponentPark_)
                     *pow(spTv[R.lhs()[0].index], 1.0-this->exponentPark_);
-                colTr = T;
+                colTr = T; 
                 break;
             case exchange:
                 colTf = T;
                 colTr = T;
                 break;
             case impactDissociation:
-                colTf = pow(T, this->exponentPark_)
-                    *pow(spTv[R.lhs()[0].index], 1.0-this->exponentPark_);
                 // Electron temperature
+                colTf = spTv[R.rhs()[1].index];
                 colTr = spTv[R.rhs()[1].index];
                 break;
             case impactIonisation:
@@ -404,291 +352,58 @@ Foam::scalar Foam::chemistry2Model<CompType, ThermoType>::omega
                 colTf = spTv[R.lhs()[0].index];
                 colTr = spTv[R.lhs()[0].index];
                 break;
-        }
-
-        if (this->modifiedTemperature())
+        }  
+        
+        if(this->modifiedTemperature())
         {
             kf = R.kf(p, modTemperature(colTf), c2);
-            kr = R.kr(p, modTemperature(colTr), c2);
+            kr = R.kr(kf, p, modTemperature(colTr), c2);
         }
         else
         {
             kf = R.kf(p, colTf, c2);
-            kr = R.kr(p, colTr, c2);
-        }
+	    kr = R.kr(kf, p, colTr, c2);
+	}
     }
     else if (this->CVModel_ == "CVDV")
     {
         scalar colTf = T, colTr = T;
-
-        // The first species to appear on the left-hand side of the equation
-        // is the one that undergoes dissociation
-        const scalar reciprocalU = reciprocalUFactor_
-            * specieThermo_[0].R()/specieThermo_[0].dissociationPotential();
-        const scalar reciprocalTf = 1.0/spTv[0] - 1.0/T - reciprocalU;
-        const scalar charVibTemp = specieThermo_[0].vibrationalList()[1];
-
-        scalar sumEnergyLevelsT = 0.0;
-        scalar sumEnergyLevelsTf = 0.0;
-        scalar sumEnergyLevelsTv = 0.0;
-        scalar sumEnergyLevelsU = 0.0;
-
-        for(label level=0 ; level<simpleHarmonicOscillatorVibCutOff_[0]; level++)
-        {
-            sumEnergyLevelsT  += exp(-level*charVibTemp/T);
-            sumEnergyLevelsTf += exp(-level*charVibTemp*reciprocalTf);
-            sumEnergyLevelsTv += exp(-level*charVibTemp/spTv[0]);
-            sumEnergyLevelsU  += exp(level*charVibTemp*reciprocalU);
-        }
-
-        const scalar CVDVCoeff = sumEnergyLevelsT*sumEnergyLevelsTf
-            /(sumEnergyLevelsTv*sumEnergyLevelsU);
-
-        if (this->modifiedTemperature())
-        {
-            kf = R.kf(p, modTemperature(colTf), c2)*CVDVCoeff;
-            kr = R.kr(p, modTemperature(colTr), c2);
-        }
-        else
-        {
-            kf = R.kf(p, colTf, c2)*CVDVCoeff;
-            kr = R.kr(p, colTr, c2);
-        }
-    }
-    else
-    {
-        // Standard single-temperature formulation
-        if (this->modifiedTemperature())
-        {
-            const scalar Tmod = modTemperature(T);
-            kf = R.kf(p, Tmod, c2);
-            kr = R.kr(kf, p, Tmod, c2);
-        }
-        else
-        {
-            kf = R.kf(p, T, c2);
-            kr = R.kr(kf, p, T, c2);
-        }
-    }
-
-    pf = 1.0;
-    pr = 1.0;
-
-    const label Nl = R.lhs().size();
-    const label Nr = R.rhs().size();
-
-    label slRef = 0;
-    lRef = R.lhs()[slRef].index;
-
-    pf = kf;
-    for (label s = 1; s < Nl; s++)
-    {
-        const label si = R.lhs()[s].index;
-
-        if (c[si] < c[lRef])
-        {
-            const scalar exp = R.lhs()[slRef].exponent;
-            pf *= pow(max(0.0, c[lRef]), exp);
-            lRef = si;
-            slRef = s;
-        }
-        else
-        {
-            const scalar exp = R.lhs()[s].exponent;
-            pf *= pow(max(0.0, c[si]), exp);
-        }
-    }
-    cf = max(0.0, c[lRef]);
-
-    {
-        const scalar exp = R.lhs()[slRef].exponent;
-        if (exp < 1.0)
-        {
-            if (cf > SMALL)
-            {
-                pf *= pow(cf, exp - 1.0);
-            }
-            else
-            {
-                pf = 0.0;
-            }
-        }
-        else
-        {
-            pf *= pow(cf, exp - 1.0);
-        }
-    }
-
-    label srRef = 0;
-    rRef = R.rhs()[srRef].index;
-
-    // find the matrix element and element position for the rhs
-    pr = kr;
-    for (label s = 1; s < Nr; s++)
-    {
-        const label si = R.rhs()[s].index;
-        if (c[si] < c[rRef])
-        {
-            const scalar exp = R.rhs()[srRef].exponent;
-            pr *= pow(max(0.0, c[rRef]), exp);
-            rRef = si;
-            srRef = s;
-        }
-        else
-        {
-            const scalar exp = R.rhs()[s].exponent;
-            pr *= pow(max(0.0, c[si]), exp);
-        }
-    }
-    cr = max(0.0, c[rRef]);
-
-    {
-        const scalar exp = R.rhs()[srRef].exponent;
-        if (exp < 1.0)
-        {
-            if (cr>SMALL)
-            {
-                pr *= pow(cr, exp - 1.0);
-            }
-            else
-            {
-                pr = 0.0;
-            }
-        }
-        else
-        {
-            pr *= pow(cr, exp - 1.0);
-        }
-    }
-
-    return pf*cf - pr*cr;
-}
-
-
-template<class CompType, class ThermoType>
-Foam::scalar Foam::chemistry2Model<CompType, ThermoType>::omega
-(
-    const Reaction2<ThermoType>& R,
-    const scalarField& c,
-    const scalar T,
-    const scalar Tv,
-    const scalar p,
-    scalar& pf,
-    scalar& cf,
-    label& lRef,
-    scalar& pr,
-    scalar& cr,
-    label& rRef
-) const
-{
-    //PRINTED = FALSE
-    scalarField c2(nSpecie_, 0.0);
-    for (label i = 0; i < nSpecie_; i++)
-    {
-        c2[i] = max(0.0, c[i]);
-    }
-
-    scalar kf = 0;
-    scalar kr = 0;
-
-    if (this->CVModel_ == "ParkTTv")
-    {
-        const Foam::ControllingTemperatureType
-            controllingTemperature = R.controlT();
-        scalar colTf = 0.0, colTr = 0.0;
-
-        switch(controllingTemperature)
-        {
-            case chargeExchange:
-                colTf = T;
-                colTr = T;
-                break;
-            case dissociation:
-                colTf = pow(T, this->exponentPark_)
-                    *pow(Tv, 1.0-this->exponentPark_);
-                colTr = T;
-                break;
-            case exchange:
-                colTf = T;
-                colTr = T;
-                break;
-            case impactDissociation:
-                colTf = pow(T, this->exponentPark_)
-                    *pow(Tv, 1.0-this->exponentPark_);
-                colTr = Tv;
-                break;
-            case impactIonisation:
-                colTf = Tv;
-                colTr = Tv;
-                break;
-            case associativeIonisation:
-                colTf = T;
-                colTr = Tv;
-                break;
-            case transrotational:
-                colTf = T;
-                colTr = T;
-                break;
-            case vibrational:
-                colTf = Tv;
-                colTr = Tv;
-                break;
-        }
-
-        if (this->modifiedTemperature())
-        {
-            kf = R.kf(p, modTemperature(colTf), c2);
-            kr = R.kr(p, modTemperature(colTr), c2);
-        }
-        else
-        {
-            kf = R.kf(p, colTf, c2);
-            kr = R.kr(p, colTr, c2);
-        }
-    }
-    else if (this->CVModel_ == "CVDV")
-    {
-        const scalar colTf = T;
-        const scalar colTr = T;
-
-        // The first species to appear on the left-hand side of the equation is
-        // the one that undergoes dissociation
-        const scalar reciprocalU = reciprocalUFactor_
-            *specieThermo_[0].R()/specieThermo_[0].dissociationPotential();
-        const scalar reciprocalTf = 1.0/Tv - 1.0/T - reciprocalU;
-        const scalar charVibTemp = specieThermo_[0].vibrationalList()[1];
         
-        scalar sumEnergyLevelsT = 0.0;
-        scalar sumEnergyLevelsTf = 0.0;
-        scalar sumEnergyLevelsTv = 0.0;
-        scalar sumEnergyLevelsU = 0.0;
+        // The first species to appear on the left-hand side of the equation 
+        // is the one that undergoes dissociation
+        const label labelSp = R.lhs()[0].index;
 
-        for(label level=0 ; level<simpleHarmonicOscillatorVibCutOff_[0]; level++)
+        const scalar reciprocalU = reciprocalUFactor_*specieThermo_[labelSp].R()/specieThermo_[labelSp].dissociationPotential();
+        const scalar reciprocalTf = 1.0/spTv[labelSp] - 1.0/T - reciprocalU;
+        
+        scalar sumEnergyLevelsT = 0.0, sumEnergyLevelsTf = 0.0, sumEnergyLevelsTv = 0.0, sumEnergyLevelsU = 0.0;
+        const scalar charVibTemp = specieThermo_[labelSp].vibrationalList()[1];
+        
+        for(label level=0 ; level<simpleHarmonicOscillatorVibCutOff_[labelSp]; level++)
         {
             sumEnergyLevelsT  += exp(-level*charVibTemp/T);
             sumEnergyLevelsTf += exp(-level*charVibTemp*reciprocalTf);
-            sumEnergyLevelsTv += exp(-level*charVibTemp/Tv);
+            sumEnergyLevelsTv += exp(-level*charVibTemp/spTv[labelSp]);
             sumEnergyLevelsU  += exp(level*charVibTemp*reciprocalU);
         }
+        
+        scalar CVDVCoeff = sumEnergyLevelsT*sumEnergyLevelsTf/(sumEnergyLevelsTv*sumEnergyLevelsU);
+      //scalar CVDVCoeff = termQ(labelSp, T)*termQ(labelSp, 1.0/reciprocalTf)/(termQ(labelSp, spTv[labelSp])*termQ(labelSp, -1.0/reciprocalU)); TOO SLOW
 
-        const scalar CVDVCoeff = sumEnergyLevelsT*sumEnergyLevelsTf
-            /(sumEnergyLevelsTv*sumEnergyLevelsU);
-            
-        if (this->modifiedTemperature())
+        if(this->modifiedTemperature())
         {
             kf = R.kf(p, modTemperature(colTf), c2)*CVDVCoeff;
-            kr = R.kr(p, modTemperature(colTr), c2);
+            kr = R.kr(kf, p, modTemperature(colTr), c2);
         }
         else
         {
             kf = R.kf(p, colTf, c2)*CVDVCoeff;
-            kr = R.kr(p, colTr, c2);
+            kr = R.kr(kf, p, colTr, c2);
         }
     }
-    else
+    else // Standard single-temperature formulation
     {
-        // Standard single-temperature formulation
-        if (this->modifiedTemperature())
+        if(this->modifiedTemperature())
         {
             scalar Tmod = modTemperature(T);
             kf = R.kf(p, Tmod, c2);
@@ -699,7 +414,11 @@ Foam::scalar Foam::chemistry2Model<CompType, ThermoType>::omega
             kf = R.kf(p, T, c2);
             kr = R.kr(kf, p, T, c2);
         }
-    }
+    }     
+    // END NEW VINCENT ********************************************************
+
+    //const scalar kf = R.kf(p, T, c2); // DELETED VINCENT
+    //const scalar kr = R.kr(kf, p, T, c2); // DELETED VINCENT
 
     pf = 1.0;
     pr = 1.0;
@@ -707,6 +426,7 @@ Foam::scalar Foam::chemistry2Model<CompType, ThermoType>::omega
     const label Nl = R.lhs().size();
     const label Nr = R.rhs().size();
 
+    // FORWARD RATE: R_f
     label slRef = 0;
     lRef = R.lhs()[slRef].index;
 
@@ -715,6 +435,8 @@ Foam::scalar Foam::chemistry2Model<CompType, ThermoType>::omega
     {
         const label si = R.lhs()[s].index;
 
+	// Make the forward product (see omega formulation) of
+	// concentrations from the biggest to the smallest one
         if (c[si] < c[lRef])
         {
             const scalar exp = R.lhs()[slRef].exponent;
@@ -734,6 +456,7 @@ Foam::scalar Foam::chemistry2Model<CompType, ThermoType>::omega
         const scalar exp = R.lhs()[slRef].exponent;
         if (exp < 1.0)
         {
+	    // Analyze the smallest concentration quantity
             if (cf > SMALL)
             {
                 pf *= pow(cf, exp - 1.0);
@@ -749,14 +472,18 @@ Foam::scalar Foam::chemistry2Model<CompType, ThermoType>::omega
         }
     }
 
+    // REVERSE RATE: R_r
     label srRef = 0;
     rRef = R.rhs()[srRef].index;
 
-    // find the matrix element and element position for the rhs
+    // Find the matrix element and element position for the rhs
     pr = kr;
     for (label s = 1; s < Nr; s++)
     {
         const label si = R.rhs()[s].index;
+
+	// Make the forward product (see omega formulation) of
+	// concentrations from the biggest to the smallest one
         if (c[si] < c[rRef])
         {
             const scalar exp = R.rhs()[srRef].exponent;
@@ -776,6 +503,7 @@ Foam::scalar Foam::chemistry2Model<CompType, ThermoType>::omega
         const scalar exp = R.rhs()[srRef].exponent;
         if (exp < 1.0)
         {
+	    // Analyze the smallest concentration quantity
             if (cr>SMALL)
             {
                 pr *= pow(cr, exp - 1.0);
@@ -791,12 +519,235 @@ Foam::scalar Foam::chemistry2Model<CompType, ThermoType>::omega
         }
     }
 
-    return pf*cf - pr*cr;
+    return pf*cf - pr*cr; // = (R_f - R_r)
 }
 
 
 template<class CompType, class ThermoType>
-void Foam::chemistry2Model<CompType, ThermoType>::derivatives
+Foam::scalar Foam::chemistry2Model<CompType, ThermoType>::omega
+(
+    const Reaction2<ThermoType>& R,
+    const scalarField& c,
+    const scalar T,
+    const scalar Tv, // NEW VINCENT
+    const scalar p,
+    scalar& pf,
+    scalar& cf,
+    label& lRef,
+    scalar& pr,
+    scalar& cr,
+    label& rRef
+) const
+{
+    scalarField c2(nSpecie_, 0.0);
+    for (label i = 0; i < nSpecie_; i++)
+    {
+        c2[i] = max(0.0, c[i]);
+    }
+
+    // NEW VINCENT ************************************************************
+    scalar kf = 0; // NEW VINCENT 07/02/2016
+    scalar kr = 0; // NEW VINCENT 07/02/2016
+    
+    if (this->CVModel_ == "ParkTTv")
+    {
+        const Foam::ControllingTemperatureType controllingTemperature = R.controlT();
+        scalar colTf = 0.0, colTr = 0.0;
+        
+        switch(controllingTemperature)
+        {
+            case chargeExchange:
+                colTf = T;
+                colTr = T;
+                break;
+            case dissociation:
+                colTf = pow(T, this->exponentPark_)*pow(Tv, 1.0-this->exponentPark_); 
+                colTr = T; 
+                break;
+            case exchange:
+                colTf = T;
+                colTr = T;
+                break;
+            case impactDissociation:
+                colTf = Tv;
+                colTr = Tv; 
+                break;
+            case impactIonisation:
+                colTf = Tv;
+                colTr = Tv;
+                break;
+            case associativeIonisation:
+                colTf = T; 
+                colTr = Tv; 
+                break;
+            case transrotational:
+                colTf = T;
+                colTr = T;
+                break;
+            case vibrational:
+                colTf = Tv;
+                colTr = Tv;
+                break;
+        }  
+        
+        if(this->modifiedTemperature())
+        {
+            kf = R.kf(p, modTemperature(colTf), c2);
+            kr = R.kr(kf, p, modTemperature(colTr), c2); 
+        }
+        else
+        {
+            kf = R.kf(p, colTf, c2);
+	    kr = R.kr(kf, p, colTr, c2);
+	}
+    }
+    else if (this->CVModel_ == "CVDV")
+    {
+        scalar colTf = T, colTr = T;
+        
+        // The first species to appear on the left-hand side of the equation is
+        // the one that undergoes dissociation
+        const label labelSp = R.lhs()[0].index;
+
+        const scalar reciprocalU = reciprocalUFactor_*specieThermo_[labelSp].R()/specieThermo_[labelSp].dissociationPotential();
+        const scalar reciprocalTf = 1.0/Tv - 1.0/T - reciprocalU;
+        scalar CVDVCoeff = termQ(labelSp, T)*termQ(labelSp, 1.0/reciprocalTf)/(termQ(labelSp, Tv)*termQ(labelSp, -1.0/reciprocalU));
+        
+        if(this->modifiedTemperature())
+        {
+            kf = R.kf(p, modTemperature(colTf), c2)*CVDVCoeff;
+            kr = R.kr(kf, p, modTemperature(colTr), c2);
+        }
+        else
+        {
+            kf = R.kf(p, colTf, c2)*CVDVCoeff;
+            kr = R.kr(kf, p, colTr, c2);
+        }
+    }
+    else // Standard single-temperature formulation
+    {
+        if(this->modifiedTemperature())
+        {
+            scalar Tmod = modTemperature(T);
+            kf = R.kf(p, Tmod, c2);
+            kr = R.kr(kf, p, Tmod, c2);
+        }
+        else
+        {
+            kf = R.kf(p, T, c2);
+            kr = R.kr(kf, p, T, c2);
+        }
+    }    
+    // END NEW VINCENT ********************************************************
+    
+    //const scalar kf = R.kf(p, T, c2); // DELETED VINCENT
+    //const scalar kr = R.kr(kf, p, T, c2); // DELETED VINCENT
+
+    pf = 1.0;
+    pr = 1.0;
+
+    const label Nl = R.lhs().size();
+    const label Nr = R.rhs().size();
+
+    // FORWARD RATE: R_f
+    label slRef = 0;
+    lRef = R.lhs()[slRef].index;
+
+    pf = kf;
+    for (label s = 1; s < Nl; s++)
+    {
+        const label si = R.lhs()[s].index;
+
+	// Make the forward product (see omega formulation) of
+	// concentrations from the biggest to the smallest one
+        if (c[si] < c[lRef])
+        {
+            const scalar exp = R.lhs()[slRef].exponent;
+            pf *= pow(max(0.0, c[lRef]), exp);
+            lRef = si;
+            slRef = s;
+        }
+        else
+        {
+            const scalar exp = R.lhs()[s].exponent;
+            pf *= pow(max(0.0, c[si]), exp);
+        }
+    }
+    cf = max(0.0, c[lRef]);
+
+    {
+        const scalar exp = R.lhs()[slRef].exponent;
+        if (exp < 1.0)
+        {
+	    // Analyze the smallest concentration quantity
+            if (cf > SMALL)
+            {
+                pf *= pow(cf, exp - 1.0);
+            }
+            else
+            {
+                pf = 0.0;
+            }
+        }
+        else
+        {
+            pf *= pow(cf, exp - 1.0);
+        }
+    }
+
+    // REVERSE RATE: R_r
+    label srRef = 0;
+    rRef = R.rhs()[srRef].index;
+
+    // Find the matrix element and element position for the rhs
+    pr = kr;
+    for (label s = 1; s < Nr; s++)
+    {
+        const label si = R.rhs()[s].index;
+
+	// Make the forward product (see omega formulation) of
+	// concentrations from the biggest to the smallest one
+        if (c[si] < c[rRef])
+        {
+            const scalar exp = R.rhs()[srRef].exponent;
+            pr *= pow(max(0.0, c[rRef]), exp);
+            rRef = si;
+            srRef = s;
+        }
+        else
+        {
+            const scalar exp = R.rhs()[s].exponent;
+            pr *= pow(max(0.0, c[si]), exp);
+        }
+    }
+    cr = max(0.0, c[rRef]);
+
+    {
+        const scalar exp = R.rhs()[srRef].exponent;
+        if (exp < 1.0)
+        {
+	    // Analyze the smallest concentration quantity
+            if (cr>SMALL)
+            {
+                pr *= pow(cr, exp - 1.0);
+            }
+            else
+            {
+                pr = 0.0;
+            }
+        }
+        else
+        {
+            pr *= pow(cr, exp - 1.0);
+        }
+    }
+
+    return pf*cf - pr*cr; // = (R_f - R_r)
+}
+
+
+template<class CompType, class ThermoType>
+void Foam::chemistry2Model<CompType, ThermoType>::derivatives //TODO for ode solver
 (
     const scalar time,
     const scalarField &c,
@@ -804,10 +755,9 @@ void Foam::chemistry2Model<CompType, ThermoType>::derivatives
 ) const
 {
     // PRINTED = FALSE
-    // NB VINCENT: this function is not meant to be called
     const scalar T = c[nSpecie_];
-    const scalar Tv = c[nSpecie_ + 1];
-    const scalar p = c[nSpecie_ + 2];
+    const scalar Tv = c[nSpecie_ + 1]; // NEW VINCENT
+    const scalar p = c[nSpecie_ + 2]; // MODIFIED VINCENT
 
     dcdt = omega(c, T, Tv, p); // MODIFIED VINCENT
 
@@ -824,16 +774,16 @@ void Foam::chemistry2Model<CompType, ThermoType>::derivatives
     scalar cp = 0.0;
     for (label i=0; i<nSpecie_; i++)
     {
-        //cp += c[i]*specieThermo_[i].cp(p, T); // DELETED
-        cp += c[i]*specieThermo_[i].cp_t(p, T);
+        //cp += c[i]*specieThermo_[i].cp(p, T); // DELETED VINCENT
+        cp += c[i]*specieThermo_[i].cp_t(p, T); // NEW VINCENT
     }
     cp /= rho;
 
     scalar dT = 0.0;
     for (label i = 0; i < nSpecie_; i++)
     {
-        //const scalar hi = specieThermo_[i].ha(p, T, T); // DELETED
-        const scalar hi = specieThermo_[i].het(p, T);
+        //const scalar hi = specieThermo_[i].ha(p, T, T); //TODO il va falloir un dTtr et un dTv
+        const scalar hi = specieThermo_[i].het(p, T); // NEW VINCENT
         dT += hi*dcdt[i];
     }
     dT /= rho*cp;
@@ -841,15 +791,16 @@ void Foam::chemistry2Model<CompType, ThermoType>::derivatives
     dcdt[nSpecie_] = -dT;
 
     // dTv/dt = ...
-    dcdt[nSpecie_ + 1] = 0.0;
-
+    //TODO
+    dcdt[nSpecie_ + 1] = 0.0; // TODO NEW VINCENT
+    
     // dp/dt = ...
-    dcdt[nSpecie_ + 2] = 0.0;
+    dcdt[nSpecie_ + 2] = 0.0; // MODIFIED VINCENT
 }
 
 
 template<class CompType, class ThermoType>
-void Foam::chemistry2Model<CompType, ThermoType>::jacobian
+void Foam::chemistry2Model<CompType, ThermoType>::jacobian //TODO for ode solver
 (
     const scalar t,
     const scalarField& c,
@@ -858,10 +809,9 @@ void Foam::chemistry2Model<CompType, ThermoType>::jacobian
 ) const
 {
     // PRINTED = FALSE
-    // NB VINCENT: this function is not meant to be called
     const scalar T = c[nSpecie_];
-    const scalar Tv = c[nSpecie_ + 1];
-    const scalar p = c[nSpecie_ + 2];
+    const scalar Tv = c[nSpecie_ + 1]; // NEW VINCENT
+    const scalar p = c[nSpecie_ + 2]; // MODIFIED VINCENT
 
     scalarField c2(nSpecie_, 0.0);
     forAll(c2, i)
@@ -878,14 +828,14 @@ void Foam::chemistry2Model<CompType, ThermoType>::jacobian
     }
 
     // length of the first argument must be nSpecie()
-    dcdt = omega(c2, T, Tv, p);
+    dcdt = omega(c2, T, Tv, p); // MODIFIED VINCENT
 
     forAll(reactions_, ri)
     {
         const Reaction2<ThermoType>& R = reactions_[ri];
 
-        const scalar kf0 = R.kf(p, T, c2);
-        const scalar kr0 = R.kr(p, T, c2);
+        const scalar kf0 = R.kf(p, T, c2); //TODO introduce the switch
+        const scalar kr0 = R.kr(p, T, c2); //TODO
 
         forAll(R.lhs(), j)
         {
@@ -982,14 +932,14 @@ void Foam::chemistry2Model<CompType, ThermoType>::jacobian
 
     // Calculate the dcdT elements numerically
     const scalar delta = 1.0e-3;
-    const scalarField dcdT0(omega(c2, T - delta, Tv - delta, p));
-    const scalarField dcdT1(omega(c2, T + delta, Tv - delta, p));
+    const scalarField dcdT0(omega(c2, T - delta, Tv - delta, p)); // MODIFIED VINCENT
+    const scalarField dcdT1(omega(c2, T + delta, Tv - delta, p)); // MODIFIED VINCENT
 
     for (label i = 0; i < nEqns(); i++)
     {
         dfdc[i][nSpecie()] = 0.5*(dcdT1[i] - dcdT0[i])/delta;
     }
-
+    
 }
 
 
@@ -1034,8 +984,8 @@ Foam::chemistry2Model<CompType, ThermoType>::tc() const
     );
 
     scalarField& tc = ttc.ref();
-    const scalarField& T = this->thermo().T();
-    const scalarField& Tv = this->thermo().Tv();
+    const scalarField& T = this->thermo().Tt(); // MODIFIED VINCENT
+    const scalarField& Tv = this->thermo().Tv(); // NEW VINCENT
     const scalarField& p = this->thermo().p();
 
     const label nReaction = reactions_.size();
@@ -1046,7 +996,7 @@ Foam::chemistry2Model<CompType, ThermoType>::tc() const
         {
             scalar rhoi = rho[celli];
             scalar Ti = T[celli];
-            scalar Tvi = Tv[celli];
+            scalar Tvi = Tv[celli]; // NEW VINCENT
             scalar pi = p[celli];
             scalarField c(nSpecie_);
             scalar cSum = 0.0;
@@ -1062,7 +1012,7 @@ Foam::chemistry2Model<CompType, ThermoType>::tc() const
             {
                 const Reaction2<ThermoType>& R = reactions_[i];
 
-                omega(R, c, Ti, Tvi, pi, pf, cf, lRef, pr, cr, rRef);
+                omega(R, c, Ti, Tvi, pi, pf, cf, lRef, pr, cr, rRef); // NEW VINCENT
 
                 forAll(R.rhs(), s)
                 {
@@ -1074,9 +1024,8 @@ Foam::chemistry2Model<CompType, ThermoType>::tc() const
         }
     }
 
-
     ttc.ref().correctBoundaryConditions();
-
+    
     return ttc;
 }
 
@@ -1103,11 +1052,11 @@ Foam::chemistry2Model<CompType, ThermoType>::Sh() const
             zeroGradientFvPatchScalarField::typeName
         )
     );
-
+    
     if (this->chemistry_)
     {
         scalarField& Sh = tSh.ref();
-
+        
         forAll(Y_, i)
         {
             forAll(Sh, cellI)
@@ -1122,157 +1071,10 @@ Foam::chemistry2Model<CompType, ThermoType>::Sh() const
 }
 
 
+// NEW VINCENT ****************************************************************
 template<class CompType, class ThermoType>
 Foam::tmp<Foam::volScalarField>
-Foam::chemistry2Model<CompType, ThermoType>::Scv() const
-{
-    tmp<volScalarField> tScv
-    (
-        new volScalarField
-        (
-            IOobject
-            (
-                "Scv",
-                this->mesh_.time().timeName(),
-                this->mesh_,
-                IOobject::NO_READ,
-                IOobject::NO_WRITE,
-                false
-            ),
-            this->mesh_,
-            dimensionedScalar("zero", dimEnergy/dimTime/dimVolume, 0.0),
-            zeroGradientFvPatchScalarField::typeName
-        )
-    );
-
-    if (this->chemistry() and computeVESourceTerm_)
-    {
-        scalarField& Scv = tScv.ref();
-
-        const scalarField& TtCells = this->thermo().T();
-        const scalarField& pCells = this->thermo().p();
-        
-        if (this->CVModel_ == "ParkTTv")
-        {
-            // Term #9 in Eq. (16)
-            // In: NASA-TM-101528 (Gupta, Yos, Thompson: Feb. 1989)
-            // Document ID: 19890011822
-            // A review of reaction rates and thermodynamic and transport 
-            // properties for the 11-species air model for chemical and
-            // thermal nonequilibrium calculations to 30000 K
-                
-            if (this->ScvModel_ == "preferential")
-            {
-                forAll(this->thermo().composition().molecules(), moli)
-                {
-                    const label i =
-                        this->thermo().composition().moleculeIds(moli);
-                    
-                    const scalarField& TvCells =
-                        this->thermo().composition().Tv()[i];
-                    
-                    const scalar dissociationPotential =
-                        specieThermo_[i].dissociationPotential();
-
-                    forAll(Scv, cellI)
-                    {
-                        Scv[cellI] +=
-                            (
-                                dissociationPotential
-                              * (
-                                    preferentialFactor_[i][0]*TtCells[cellI]
-                                  + preferentialFactor_[i][1]
-                                )
-                              + specieThermo_[i].HEel
-                                (
-                                    pCells[cellI],
-                                    TvCells[cellI]
-                                )
-                            ) * RR_[i][cellI];
-                    }
-                }
-            }
-            else if (this->ScvModel_ == "nonPreferential")
-            {
-                forAll(this->thermo().composition().molecules(), moli)
-                {
-                    const label i =
-                        this->thermo().composition().moleculeIds(moli);
-                        
-                    forAll(Scv, cellI)
-                    {
-                        const scalarField& TvCells =
-                            this->thermo().composition().Tv()[i];
-                        
-                        const scalar Dprime =
-                            specieThermo_[i].HEvel
-                            (
-                                pCells[cellI],
-                                TvCells[cellI]
-                            );
-                        Scv[cellI] += Dprime*RR_[i][cellI];
-                    }
-                }
-            }
-        }
-        else if (this->CVModel_ == "CVDV")
-        {
-            forAll(this->thermo().composition().molecules(), moli)
-            {
-                const label i =
-                    this->thermo().composition().moleculeIds(moli);
-                
-                const scalarField& TvCells =
-                    this->thermo().composition().Tv()[i];
-                        
-                const scalar speciesR = specieThermo_[i].R();
-                const scalar charVibTemp =
-                    specieThermo_[i].vibrationalList()[1];
-                const label cutoffValue = simpleHarmonicOscillatorVibCutOff_[i];
-                const scalar reciprocalU = reciprocalUFactor_*speciesR
-                    /specieThermo_[i].dissociationPotential();
-
-                forAll(Scv, cellI)
-                {
-                    scalar sumEnergyEnergyLevelsTf = 0.0;
-                    scalar sumEnergyEnergyLevelsU = 0.0;
-                    scalar sumEnergyLevelsTf = 0.0;
-                    scalar sumEnergyLevelsU = 0.0;
-
-                    const scalar reciprocalTf = 1.0/TvCells[cellI]
-                        - 1.0/TtCells[cellI] - reciprocalU;
-
-                    for(label level=0 ; level<cutoffValue; level++)
-                    {
-                        sumEnergyEnergyLevelsTf +=
-                            level*speciesR*charVibTemp
-                          * exp(-level*charVibTemp*reciprocalTf);
-
-                        sumEnergyEnergyLevelsU +=
-                            level*speciesR*charVibTemp
-                          * exp(level*charVibTemp*reciprocalU);
-
-                        sumEnergyLevelsTf +=
-                            exp(-level*charVibTemp*reciprocalTf);
-                        sumEnergyLevelsU += exp(level*charVibTemp*reciprocalU);
-                    }
-
-                    Scv[cellI] +=
-                        sumEnergyEnergyLevelsTf/sumEnergyLevelsTf*RRf_[i][cellI]
-                      + sumEnergyEnergyLevelsU/sumEnergyLevelsU
-                            *(RR_[i][cellI] - RRf_[i][cellI]);
-                }
-            }
-        }
-    }
-
-    return tScv;
-}
-
-
-template<class CompType, class ThermoType>
-Foam::tmp<Foam::volScalarField>
-Foam::chemistry2Model<CompType, ThermoType>::Scv(const label i) const
+Foam::chemistry2Model<CompType, ThermoType>::Scv(label i) const
 {
     tmp<volScalarField> tScv
     (
@@ -1293,49 +1095,38 @@ Foam::chemistry2Model<CompType, ThermoType>::Scv(const label i) const
         )
     );
 
-    if
-    (
-        this->chemistry()
-    and computeVESourceTerm_
-    and this->thermo().composition().isMolecule(i)
-    )
+    if (this->chemistry() and (this->thermo().composition().particleType(i) == 2
+				or this->thermo().composition().particleType(i) == 4)) // NEW VINCENT 16/02/2017
+    // This source term only exists for molecule
     {
         scalarField& Scv = tScv.ref();
-
-        const scalarField& TtCells = this->thermo().T();
+        
+        const scalarField& TtCells = this->thermo().Tt();
         const scalarField& TvCells = this->thermo().composition().Tv()[i];
         const scalarField& pCells = this->thermo().p();
 
-        if (this->CVModel_ == "ParkTTv")
+	if (this->CVModel_ == "ParkTTv")
         {
             if (this->ScvModel_ == "preferential")
             {
-                const scalar dissociationPotential =
+                const scalar dissociationPotential = 
                     specieThermo_[i].dissociationPotential();
-
+                
                 forAll(Scv, cellI)
                 {
-                    Scv[cellI] =
-                        (
-                            dissociationPotential
-                          * (
-                                preferentialFactor_[i][0]*TtCells[cellI]
-                              + preferentialFactor_[i][1]
-                            )
-                          + specieThermo_[i].HEel(pCells[cellI], TvCells[cellI])
-                        )
-                        * RR_[i][cellI];
+                    Scv[cellI] = ((preferentialFactor_[i][0]*TtCells[cellI]+preferentialFactor_[i][1])*dissociationPotential 
+                        + specieThermo_[i].HEel(pCells[cellI], TvCells[cellI]))*RR_[i][cellI];
                 }
             }
             else if (this->ScvModel_ == "nonPreferential")
             {
                 forAll(Scv, cellI)
                 {
-                    const scalar Dprime =
+                    const scalar Dprime = 
                         specieThermo_[i].HEvel(pCells[cellI], TvCells[cellI]);
                     Scv[cellI] = Dprime*RR_[i][cellI];
                 }
-            }
+            } 
         }
         else if (this->CVModel_ == "CVDV")
         {
@@ -1344,33 +1135,29 @@ Foam::chemistry2Model<CompType, ThermoType>::Scv(const label i) const
             const label cutoffValue = simpleHarmonicOscillatorVibCutOff_[i];
             const scalar reciprocalU = reciprocalUFactor_*speciesR
                 /specieThermo_[i].dissociationPotential();
-
+            
             forAll(Scv, cellI)
             {
-                scalar sumEnergyEnergyLevelsTf = 0.0;
-                scalar sumEnergyEnergyLevelsU = 0.0;
-                scalar sumEnergyLevelsTf = 0.0;
-                scalar sumEnergyLevelsU = 0.0;
-
-                const scalar reciprocalTf = 1.0/TvCells[cellI]
-                    - 1.0/TtCells[cellI] - reciprocalU;
-
+                scalar sumEnergyEnergyLevelsTf = 0.0, sumEnergyEnergyLevelsU = 0.0,
+                    sumEnergyLevelsTf = 0.0, sumEnergyLevelsU = 0.0;
+                
+                scalar reciprocalTf = 1.0/TvCells[cellI] - 1.0/TtCells[cellI] 
+                    - reciprocalU;
+                
                 for(label level=0 ; level<cutoffValue; level++)
                 {
                     sumEnergyEnergyLevelsTf += (level*speciesR*charVibTemp)
                         * exp(-level*charVibTemp*reciprocalTf);
-
+                        
                     sumEnergyEnergyLevelsU += (level*speciesR*charVibTemp)
-                        * exp(level*charVibTemp*reciprocalU);
-
+                        * exp(level*charVibTemp*reciprocalU);            
+                
                     sumEnergyLevelsTf += exp(-level*charVibTemp*reciprocalTf);
                     sumEnergyLevelsU += exp(level*charVibTemp*reciprocalU);
                 }
-
-                Scv[cellI] =
-                    sumEnergyEnergyLevelsTf/sumEnergyLevelsTf*RRf_[i][cellI]
-                  + sumEnergyEnergyLevelsU/sumEnergyLevelsU
-                        *(RR_[i][cellI] - RRf_[i][cellI]);
+            
+                Scv[cellI] = sumEnergyEnergyLevelsTf/sumEnergyLevelsTf*RRf_[i][cellI] 
+                    + sumEnergyEnergyLevelsU/sumEnergyLevelsU*(RR_[i][cellI]-RRf_[i][cellI]);
             }
         }
     }
@@ -1381,15 +1168,15 @@ Foam::chemistry2Model<CompType, ThermoType>::Scv(const label i) const
 
 template<class CompType, class ThermoType>
 Foam::tmp<Foam::volScalarField>
-Foam::chemistry2Model<CompType, ThermoType>::Siir() const
+Foam::chemistry2Model<CompType, ThermoType>::Seiir(label i) const
 {
-    tmp<volScalarField> tSiir
+    tmp<volScalarField> tSeiir
     (
         new volScalarField
         (
             IOobject
             (
-                "Siir",
+                "Seiir_" + Y_[i].name(),
                 this->mesh_.time().timeName(),
                 this->mesh_,
                 IOobject::NO_READ,
@@ -1402,80 +1189,36 @@ Foam::chemistry2Model<CompType, ThermoType>::Siir() const
         )
     );
 
-    if (iirIds_.size() != 0)
+    if(this->chemistry())
     {
-        scalarField& Siir = tSiir.ref();
-        
-        forAll(iirIds_, iir)
+        if(this->thermo().composition().contains("N+")
+            and this->thermo().composition().species()[i] == "N")
         {
-            const label speciei = posIonisedSpecies_[iir];
-            const label specien = posNeutralSpecies_[iir];
+            scalarField& Seiir = tSeiir.ref();
             
-            const scalar Wion = this->thermo().composition().W(speciei)*1.0e-3;
-            
-            forAll(Siir, celli)
+            forAll(Seiir, celli)
             {
-                Siir[celli] += -RRfiir_[iir][celli]*Wion
-                    *specieThermo_[specien].iHat();
+                Seiir[celli] = 1.0/3.0 * specieThermo_[i].iHat()
+                    *RRIonisedAtomseii_[0][celli];
+            }
+        }
+        
+        if(this->thermo().composition().contains("O+")
+            and this->thermo().composition().species()[i] == "O")
+        {
+            scalarField& Seiir = tSeiir.ref();
+            
+            forAll(Seiir, celli)
+            {
+                Seiir[celli] = 1.0/3.0 * specieThermo_[i].iHat()
+                    *RRIonisedAtomseii_[1][celli];
             }
         }
     }
-
-    return tSiir;
-}
-
-
-template<class CompType, class ThermoType>
-Foam::tmp<Foam::volScalarField>
-Foam::chemistry2Model<CompType, ThermoType>::Siir(const label i) const
-{
-    tmp<volScalarField> tSiir
-    (
-        new volScalarField
-        (
-            IOobject
-            (
-                "Siir_" + Y_[i].name(),
-                this->mesh_.time().timeName(),
-                this->mesh_,
-                IOobject::NO_READ,
-                IOobject::NO_WRITE,
-                false
-            ),
-            this->mesh_,
-            dimensionedScalar("zero", dimEnergy/dimTime/dimVolume, 0.0),
-            zeroGradientFvPatchScalarField::typeName
-        )
-    );
-
-    if (iirIds_.size() != 0)
-    {
-        scalarField& Siir = tSiir.ref();
         
-        forAll(iirIds_, iir)
-        {
-            const label speciei = posIonisedSpecies_[iir];
-            
-            if (speciei == i)
-            {
-                const label specien = posNeutralSpecies_[iir];
-            
-                const scalar Wion = 
-                    this->thermo().composition().W(speciei)*1.0e-3;
-                
-                forAll(Siir, celli)
-                {
-                    Siir[celli] = RRfiir_[iir][celli]*Wion
-                        *specieThermo_[specien].iHat();
-                }
-                
-                return tSiir;
-            }
-        }
-    }
-
-    return tSiir;
+    return tSeiir;
 }
+// END NEW VINCENT ************************************************************
 
 
 template<class CompType, class ThermoType>
@@ -1516,7 +1259,7 @@ template<class CompType, class ThermoType>
 Foam::label Foam::chemistry2Model<CompType, ThermoType>::nEqns() const
 {
     // nEqns = number of species + temperature_tr + temperature_v + pressure
-    return nSpecie_ + 2 + 1;
+    return nSpecie_ + 2 + 1;  // MODIFIED VINCENT
 }
 
 
@@ -1565,23 +1308,25 @@ Foam::chemistry2Model<CompType, ThermoType>::calculateRR
 
     DimensionedField<scalar, volMesh>& RR = tRR.ref();
 
-    const scalarField& T = this->thermo().T();
-    List<scalarField> spTv(nSpecie_);
+    const scalarField& T = this->thermo().Tt(); // MODIFIED VINCENT
+    const scalarField& Tv = this->thermo().Tv(); // NEW VINCENT
+    List<scalarField> spTv(nSpecie_); // NEW VINCENT
     forAll (spTv, speciei)
-    {
+    { 
         spTv[speciei] = this->thermo().composition().Tv()[speciei];
-    }
+    } // NEW VINCENT
     const scalarField& p = this->thermo().p();
 
     forAll(rho, celli)
     {
         const scalar rhoi = rho[celli];
         const scalar Ti = T[celli];
-        scalarList spTvi(nSpecie_);
+        const scalar Tvi = Tv[celli]; // NEW VINCENT
+        List<scalar> spTvi(nSpecie_); // NEW VINCENT
         forAll (spTv, speciei)
         {
             spTvi[speciei] = spTv[speciei][celli];
-        }
+        } // NEW VINCENT   
         const scalar pi = p[celli];
 
         scalarField c(nSpecie_, 0.0);
@@ -1596,7 +1341,8 @@ Foam::chemistry2Model<CompType, ThermoType>::calculateRR
             reactionI,
             c,
             Ti,
-            spTvi,
+            Tvi, // MODIFIED VINCENT
+            spTvi, // NEW VINCENT
             pi,
             pf,
             cf,
@@ -1637,15 +1383,15 @@ void Foam::chemistry2Model<CompType, ThermoType>::calculate()
         this->thermo().rho()
     );
 
-    const scalarField& T = this->thermo().T();
-    const scalarField& Tv = this->thermo().Tv(); // NOT ALWAYS UPDATED - CAREFUL
+    const scalarField& T = this->thermo().Tt(); // MODIFIED VINCENT
+    const scalarField& Tv = this->thermo().Tv(); // NEW VINCENT
     const scalarField& p = this->thermo().p();
 
     forAll(rho, celli)
     {
         const scalar rhoi = rho[celli];
         const scalar Ti = T[celli];
-        const scalar Tvi = Tv[celli];
+        const scalar Tvi = Tv[celli]; // NEW VINCENT
         const scalar pi = p[celli];
         scalarField c(nSpecie_, 0.0);
         for (label i=0; i<nSpecie_; i++)
@@ -1654,7 +1400,7 @@ void Foam::chemistry2Model<CompType, ThermoType>::calculate()
             c[i] = rhoi*Yi/specieThermo_[i].W();
         }
 
-        const scalarField dcdt(omega(c, Ti, Tvi, pi));
+        const scalarField dcdt(omega(c, Ti, Tvi, pi)); // MODIFIED VINCENT
 
         for (label i=0; i<nSpecie_; i++)
         {
@@ -1671,7 +1417,8 @@ Foam::scalar Foam::chemistry2Model<CompType, ThermoType>::solve
     const DeltaTType& deltaT
 )
 {
-    // PRINTED = TRUE, WITH OR WITHOUT CHEMISTRY
+    //Info << "B: chemistry2Model::solve" << endl;
+    // PRINTED = TRUE, WITH OR WOUT CHEMISTRY
     CompType::correct();
 
     scalar deltaTMin = GREAT;
@@ -1695,151 +1442,112 @@ Foam::scalar Foam::chemistry2Model<CompType, ThermoType>::solve
         this->thermo().rho()
     );
 
-    const scalarField& T = this->thermo().T();
+    const scalarField& T = this->thermo().Tt();
+    const scalarField& Tv = this->thermo().Tv();
     List<scalarField> spTv(nSpecie_);
     forAll (spTv, speciei)
-    {
+    { 
         spTv[speciei] = this->thermo().composition().Tv()[speciei];
     }
     const scalarField& p = this->thermo().p();
 
     scalarField c(nSpecie_);
+    scalarField cfwd(nSpecie_); // NEW VINCENT 25/03/2016
+    scalarField ceiiN(nSpecie_); // NEW Zanardi
+    scalarField ceiiO(nSpecie_); // NEW Zanardi
     scalarField c0(nSpecie_);
-    scalarField cfwd(nSpecie_);
-    scalarField cfwdiir(nSpecie_);
-    
+
     forAll(rho, celli)
     {
         scalar Ti = T[celli];
-
+        
         if (Ti > Treact_)
         {
             const scalar rhoi = rho[celli];
             scalar pi = p[celli];
-
+            
+            scalar Tvi = Tv[celli];
             List<scalar> spTvi(nSpecie_);
             forAll (spTv, speciei)
             {
                 spTvi[speciei] = spTv[speciei][celli];
-            }
+            }  
 
             for (label i=0; i<nSpecie_; i++)
             {
                 c[i] = rhoi*Y_[i][celli]/specieThermo_[i].W();
                 c0[i] = c[i];
             }
-            
-            cfwd = c;
-            cfwdiir = c;
-            
+
             // Initialise time progress
             scalar timeLeft = deltaT[celli];
-
+            
             // Calculate the chemical source terms
+            cfwd = c; // NEW VINCENT 25/03/2016
+            ceiiN = c; // NEW Zanardi
+            ceiiO = c; // NEW Zanardi
+            
             while (timeLeft > SMALL)
             {
-                scalar dt = timeLeft;
+                scalar dt = timeLeft;           
+                //this->solve(c, Ti, Tvi, spTvi, pi, dt, this->deltaTChem_[celli]); // MODIFIED VINCENT
+                //Info << "ENTER" << endl;
+                this->solve
+                (
+                    c, 
+                    cfwd, 
+                    ceiiN, 
+                    ceiiO, 
+                    Ti, 
+                    Tvi, 
+                    spTvi, 
+                    pi, 
+                    dt, 
+                    this->deltaTChem_[celli]
+                ); // NEW VINCENT 25/03/2016
+                //Info << "LEAVE" << endl;
                 
-                if (this->CVModel_ == "CVDV" and iirIds_.size() != 0)
-                {
-                    this->solve
-                    (
-                        c,
-                        cfwd,
-                        cfwdiir,
-                        iirIds_,
-                        Ti,
-                        spTvi,
-                        pi,
-                        dt,
-                        this->deltaTChem_[celli]
-                    );
-                }
-                else if (this->CVModel_ == "CVDV")
-                {
-                    this->solve
-                    (
-                        c,
-                        cfwd,
-                        Ti,
-                        spTvi,
-                        pi,
-                        dt,
-                        this->deltaTChem_[celli]
-                    );
-                }
-                else if (iirIds_.size() != 0)
-                {
-                    this->solve
-                    (
-                        c,
-                        cfwdiir,
-                        iirIds_,
-                        Ti,
-                        spTvi,
-                        pi,
-                        dt,
-                        this->deltaTChem_[celli]
-                    );
-                }
-                else
-                {
-                    this->solve
-                    (
-                        c,
-                        Ti,
-                        spTvi,
-                        pi,
-                        dt,
-                        this->deltaTChem_[celli]
-                    );
-                }
-
                 timeLeft -= dt;
             }
 
             deltaTMin = min(this->deltaTChem_[celli], deltaTMin);
 
+            //Info << "Pt1" << endl;
             for (label i=0; i<nSpecie_; i++)
             {
-                // units of RR_: [kg/m3/s]
-                RR_[i][celli] =
-                    (c[i] - c0[i])*specieThermo_[i].W()/deltaT[celli];
-                
-                if (this->CVModel_ == "CVDV")
+                RR_[i][celli] = (c[i] - c0[i])*specieThermo_[i].W()/deltaT[celli];
+                RRf_[i][celli] = (cfwd[i] - c0[i])*specieThermo_[i].W()/deltaT[celli]; // NEW VINCENT 25/03/2016
+                //Info << "Pt2." << i << endl;
+                // NEW VINCENT 22/02/2017 *********************************************
+                if(this->thermo().composition().species()[i] == "N+")
                 {
-                    // units of RRf_: [kg/m3/s]
-                    RRf_[i][celli] = (cfwd[i] - c0[i])
-                        *specieThermo_[i].W()/deltaT[celli];
+                    RRIonisedAtomseii_[0][celli] = (ceiiN[i] - c0[i])
+                        *this->thermo().composition().W("N+")/deltaT[celli];
                 }
-            }
-            
-            forAll(iirIds_, iir)
-            {
-                // units of RRfiir_: [mol/m3/s]
-                label i = posIonisedSpecies_[iir];
-                RRfiir_[iir][celli] = (cfwdiir[i] - c0[i])*1.0e3/deltaT[celli];
+                if(this->thermo().composition().species()[i] == "O+")
+                {
+                    RRIonisedAtomseii_[1][celli] = (ceiiO[i] - c0[i])
+                        *this->thermo().composition().W("O+")/deltaT[celli];
+                }
+                // END NEW VINCENT 22/02/2017 *****************************************
             }
         }
         else
         {
             for (label i=0; i<nSpecie_; i++)
             {
-                RR_[i][celli] = 0.0;
-                
-                if (this->CVModel_ == "CVDV")
-                {
-                    RRf_[i][celli] = 0.0;
-                }
+                RR_[i][celli] = 0;
+                RRf_[i][celli] = 0;
             }
-            
-            forAll(iirIds_, iir)
+            for (label i=0; i<2; i++)
             {
-                RRfiir_[iir][celli] = 0.0;
+                RRIonisedAtomseii_[i][celli] = 0;
             }
         }
     }
-    
+
+    //Info<< "deltaTMin : " << deltaTMin << endl;
+    //Info << "E: chemistry2Model::solve" << endl;
     return deltaTMin;
 }
 
@@ -1850,8 +1558,8 @@ Foam::scalar Foam::chemistry2Model<CompType, ThermoType>::solve
     const scalar deltaT
 )
 {
-    // PRINTED = TRUE, this function is used at first
-
+    //PRINTED = TRUE, this function is used at first
+    
     // Don't allow the time-step to change more than a factor of 2
     return min
     (
@@ -1877,7 +1585,8 @@ void Foam::chemistry2Model<CompType, ThermoType>::solve
 (
     scalarField &c,
     scalar& T,
-    List<scalar>& spTv,
+    scalar& Tv, // MODIFIED VINCENT
+    List<scalar>& spTv, // NEW VINCENT
     scalar& p,
     scalar& deltaT,
     scalar& subDeltaT
@@ -1889,10 +1598,11 @@ void Foam::chemistry2Model<CompType, ThermoType>::solve
         "("
             "scalarField&, "
             "scalar&, "
-            "List<scalar>&, "
             "scalar&, "
+            "scalar&, " // MODIFIED VINCENT
+            "List<scalar>&, " // NEW VINCENT
             "scalar&, "
-            "scalar& "
+            "scalar&"
         ") const"
     );
 }
@@ -1903,68 +1613,11 @@ void Foam::chemistry2Model<CompType, ThermoType>::solve
 (
     scalarField& c,
     scalarField& cfwd,
+    scalarField& ceiiN,
+    scalarField& ceiiO,
     scalar& T,
-    List<scalar>& spTv,
-    scalar& p,
-    scalar& deltaT,
-    scalar& subDeltaT
-) const
-{
-    notImplemented
-    (
-        "chemistry2Model::solve"
-        "("
-            "scalarField&, "
-            "scalarField&, "
-            "scalar&, "
-            "List<scalar>&, "
-            "scalar&, "
-            "scalar&, "
-            "scalar& "
-        ") const"
-    );
-}
-
-
-template<class CompType, class ThermoType>
-void Foam::chemistry2Model<CompType, ThermoType>::solve
-(
-    scalarField& c,
-    scalarField& cfwdiir,
-    labelList& iirIds,
-    scalar& T,
-    List<scalar>& spTv,
-    scalar& p,
-    scalar& deltaT,
-    scalar& subDeltaT
-) const
-{
-    notImplemented
-    (
-        "chemistry2Model::solve"
-        "("
-            "scalarField&, "
-            "scalarField&, "
-            "labelList&, "
-            "scalar&, "
-            "List<scalar>&, "
-            "scalar&, "
-            "scalar&, "
-            "scalar& "
-        ") const"
-    );
-}
-
-
-template<class CompType, class ThermoType>
-void Foam::chemistry2Model<CompType, ThermoType>::solve
-(
-    scalarField& c,
-    scalarField& cfwd,
-    scalarField& cfwdiir,
-    labelList& iirIds,
-    scalar& T,
-    List<scalar>& spTv,
+    scalar& Tv, // MODIFIED VINCENT
+    List<scalar>& spTv, // NEW VINCENT
     scalar& p,
     scalar& deltaT,
     scalar& subDeltaT
@@ -1977,12 +1630,13 @@ void Foam::chemistry2Model<CompType, ThermoType>::solve
             "scalarField&, "
             "scalarField&, "
             "scalarField&, "
-            "labelList&, "
-            "scalar&, "
-            "List<scalar>&, "
+            "scalarField&, "
             "scalar&, "
             "scalar&, "
-            "scalar& "
+            "scalar&, " // MODIFIED VINCENT
+            "List<scalar>&, " // NEW VINCENT
+            "scalar&, "
+            "scalar&"
         ") const"
     );
 }

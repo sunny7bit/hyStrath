@@ -15,8 +15,10 @@ thermo.validate(args.executable(), "h", "e");
 //---------------------------------------------------------
 // Initialisation of the two-temperature model
 //---------------------------------------------------------
+bool hyLight = thermo.hyLight();
 
-thermo.initialise2T();
+if (hyLight) thermo.initialise2T_Light();
+else thermo.initialise2T();
 
 bool downgradeSingleVibMode = thermo.downgradeSingleVibMode();
 bool downgradeSingleTv = thermo.downgradeSingleTv();
@@ -24,7 +26,6 @@ bool downgradeSingleT = thermo.downgradeSingleTemperature();
 
 bool hyDev = thermo.lookupOrDefault<bool>("hyDev", false);
 bool injectors = thermo.lookupOrDefault<bool>("injectors", false);
-bool hyLight = thermo.hyLight();
 
 //---------------------------------------------------------
 // Loading some general thermophysical quantities
@@ -156,13 +157,11 @@ autoPtr<mixingRule> transport
 
 const volScalarField& mu = thermo.mu();
 
-//- Bulk viscosity
+//- Bulk viscosity 08/10/2016
 /*const scalar pi = constant::mathematical::pi;
 const scalar ZrotInf = 18.0;
 const dimensionedScalar TZ ("TZ", dimTemperature, 91.5);
-volScalarField Zrot =
-    ZrotInf/(1.0 + sqr(pi)/2.0*sqrt(TZ/thermo.T()) 
-  + (sqr(pi)/4.0 + pi)*TZ/thermo.T());
+volScalarField Zrot = ZrotInf/(1.0 + sqr(pi)/2.0*sqrt(TZ/thermo.Tt()) + (sqr(pi)/4.0 + pi)*TZ/thermo.Tt());
 volScalarField Z = 3.0*pi/(4.0*(thermo.zetar()+3.0))*Zrot;
 
 volScalarField mub = mu*(2.0*thermo.zetar()*Z)/(3.0*(thermo.zetar()+3.0));
@@ -180,7 +179,7 @@ volScalarField bulkToShearRatio
     dimensionedScalar("scalarZero", dimless, 0.0)
 );*/
 
-bool inviscid = true;
+bool inviscid(true);
 if (max(mu.primitiveField()) > 0.0)
 {
     inviscid = false;
@@ -199,14 +198,12 @@ autoPtr<rarefactionParameter> rarefactionParameters
 );
 rarefactionParameters->correct(U);
 
-
+   
 //---------------------------------------------------------
 // Heat flux vectors
 //---------------------------------------------------------
 
-bool writeWallHeatFlux =
-    thermo.transportDictionary().subDict("transportModels")
-        .lookupOrDefault<bool>("writeWallHeatFlux", false);
+bool writeWallHeatFlux = thermo.transportDictionary().subDict("transportModels").lookupOrDefault<bool>("writeWallHeatFlux", false);
 
 //- Wall heat flux
 volScalarField wallHeatFlux

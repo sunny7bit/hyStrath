@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2012 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -27,9 +27,9 @@ License
 #include "addToRunTimeSelectionTable.H"
 #include "fvPatchFieldMapper.H"
 #include "volFields.H"
-#include "multi2Thermo.H"
+#include "multi2Thermo.H" // NEW VINCENT
 
-#include <string.H>
+#include <string.H> // NEW VINCENT 18/04/2016
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -45,7 +45,7 @@ mixed2VELEnergyFvPatchScalarField
 {
     word fieldName = iF.name();
     specieName_ = fieldName.substr(fieldName.find("_") + 1);
-
+    
     valueFraction() = 0.0;
     refValue() = 0.0;
     refGrad() = 0.0;
@@ -126,29 +126,19 @@ void Foam::mixed2VELEnergyFvPatchScalarField::updateCoeffs()
     const scalarField& pw = multiThermo.p().boundaryField()[patchi];
     mixedFvPatchScalarField& Tvw = refCast<mixedFvPatchScalarField>
     (
-        const_cast<fvPatchScalarField&>
-        (
-            thermo_.composition().Tv(specieName_).boundaryField()[patchi]
-        )
+        const_cast<fvPatchScalarField&>(thermo_.composition().Tv(specieName_).boundaryField()[patchi])
     );
 
     Tvw.evaluate();
 
     valueFraction() = Tvw.valueFraction();
-    refValue() =
-        thermo_.composition().hevel(specieName_, pw, Tvw.refValue(), patchi);
+    refValue() = thermo_.composition().hevel(specieName_, pw, Tvw.refValue(), patchi);
     refGrad() =
         thermo_.composition().Cv_vel(specieName_, pw, Tvw, patchi)*Tvw.refGrad()
       + patch().deltaCoeffs()*
         (
             thermo_.composition().hevel(specieName_, pw, Tvw, patchi)
-          - thermo_.composition().hevel
-            (
-                specieName_,
-                pw,
-                Tvw,
-                patch().faceCells()
-            )
+          - thermo_.composition().hevel(specieName_, pw, Tvw, patch().faceCells())
         );
 
     mixedFvPatchScalarField::updateCoeffs();

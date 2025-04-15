@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -37,7 +37,8 @@ SourceFiles
 
 #include "typeInfo.H"
 #include "runTimeSelectionTables.H"
-#include "Reaction2.H"
+//#include "Reaction.H" // DELETED VINCENT 08/02/2016
+#include "Reaction2.H" // NEW VINCENT 08/02/2016
 #include "Reaction2List.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -133,28 +134,32 @@ public:
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#define make2ChemistryReader(MultiThermo)                                     \
-    defineTemplateTypeNameAndDebug(chemistry2Reader<MultiThermo>, 0);         \
+// NEW VINCENT ****************************************************************
+// TWO-TEMPERATURE CFD MODEL
+#define make2ChemistryReader(MultiThermo)                                           \
+    defineTemplateTypeNameAndDebug(chemistry2Reader<MultiThermo>, 0);               \
     defineTemplateRunTimeSelectionTable(chemistry2Reader<MultiThermo>, dictionary)
 
 
-#define make2ChemistryReaderType(Reader, MultiThermo)                          \
-    defineNamedTemplateTypeNameAndDebug(Reader<MultiThermo>, 0);               \
+#define make2ChemistryReaderType(Reader, MultiThermo)                               \
+    defineNamedTemplateTypeNameAndDebug(Reader<MultiThermo>, 0);                   \
     chemistry2Reader<MultiThermo>::adddictionaryConstructorToTable<Reader<MultiThermo> > \
         add##Reader##MultiThermo##ConstructorToTable_
 
+// TWO-TEMPERATURE CFD MODEL
 // for non-templated chemistry readers
-#define add2ChemistryReaderType(Reader, MultiThermo)                          \
+#define add2ChemistryReaderType(Reader, MultiThermo)                                \
     defineTypeNameAndDebug(Reader, 0);                                        \
-    chemistry2Reader<MultiThermo>::adddictionaryConstructorToTable<Reader>    \
+    chemistry2Reader<MultiThermo>::adddictionaryConstructorToTable<Reader>          \
         add##Reader##Thermo##ConstructorToTable_
 
 
 // for templated chemistry readers
-#define add2TemplateChemistryReaderType(Reader, MultiThermo)                  \
+#define add2TemplateChemistryReaderType(Reader, MultiThermo)                        \
     defineNamedTemplateTypeNameAndDebug(Reader, 0);                           \
-    chemistry2Reader<MultiThermo>::adddictionaryConstructorToTable<Reader>    \
-        add##Reader##MultiThermo##ConstructorToTable_                         \
+    chemistry2Reader<MultiThermo>::adddictionaryConstructorToTable<Reader>          \
+        add##Reader##MultiThermo##ConstructorToTable_
+// END NEW VINCENT ************************************************************
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

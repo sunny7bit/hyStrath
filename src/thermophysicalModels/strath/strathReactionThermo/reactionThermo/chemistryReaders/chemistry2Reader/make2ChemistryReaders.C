@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2013 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -36,6 +36,24 @@ namespace Foam
 {
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Solid chemistry readers based on sensibleEnthalpy
+
+make2ChemistryReader(demConstGasHThermoPhysicsH2TGD);
+make2ChemistryReaderType(foam2ChemistryReader, demConstGasHThermoPhysicsH2TGD);
+
+make2ChemistryReader(demGasHThermoPhysicsH2TGD);
+make2ChemistryReaderType(foam2ChemistryReader, demGasHThermoPhysicsH2TGD);
+
+make2ChemistryReader(demBEGasHThermoPhysicsH2TGD);
+make2ChemistryReaderType(foam2ChemistryReader, demBEGasHThermoPhysicsH2TGD);
+
+make2ChemistryReader(demPLEGasHThermoPhysicsH2TGD);
+make2ChemistryReaderType(foam2ChemistryReader, demPLEGasHThermoPhysicsH2TGD);
+
+make2ChemistryReader(demCEAGasHThermoPhysicsH2TGD);
+make2ChemistryReaderType(foam2ChemistryReader, demCEAGasHThermoPhysicsH2TGD);
+
 
 // Solid chemistry readers for solids based on sensibleInternalEnergy
 

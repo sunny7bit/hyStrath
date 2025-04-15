@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2012 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -59,23 +59,29 @@ class nonEqSmoluchowskiJumpTFvPatchScalarField
         //- Density field name, default = "rho"
         word rhoName_;
 
+        //- Compressibility field name, default = "thermo:psi"
+        //word psiName_;
+
         //- Dynamic viscosity field name, default = "mu"
         word muName_;
-
-        //- Thermal diffusivity field name, default = "alpha"
-        word alphaName_;
-
+        
+        //- Thermal diffusivity field name, default = "alphatr"
+        word alphaName_; // NEW VINCENT 03/03/2016
+        
         //- Ratio of specific heat capacities field name, default = "gammatr"
-        word gammaName_;
-
+        word gammatrName_; // NEW VINCENT 03/03/2016
+        
         //- Mean free path field name, default = "mfp"
-        word mfpName_;
+        word mfpName_; // NEW VINCENT 28/02/2016
 
         //- Accommodation coefficient
         scalar accommodationCoeff_;
 
         //- Wall surface temperature
         scalarField Twall_;
+
+        //- Heat capacity ratio (default 1.4)
+        //scalar gamma_;
 
 public:
 

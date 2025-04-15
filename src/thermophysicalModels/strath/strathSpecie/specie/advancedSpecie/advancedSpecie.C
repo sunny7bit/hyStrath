@@ -2,11 +2,11 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           | Copyright (C) 2016-2021 hyStrath
+    \\  /    A nd           | Copyright (C) 2011-2012 OpenFOAM Foundation
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
 License
-    This file is part of hyStrath, a derivative work of OpenFOAM.
+    This file is part of OpenFOAM.
 
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
@@ -30,26 +30,23 @@ License
 /* * * * * * * * * * * * * * * public constants  * * * * * * * * * * * * * * */
 
 //- Universal gas constant (default in [J/(kmol K)])
-const Foam::scalar
-Foam::advancedSpecie::RR = constant::physicoChemical::R.value()*1000;
+const Foam::scalar Foam::advancedSpecie::RR = constant::physicoChemical::R.value()*1000;
 
 //- Standard pressure (default in [Pa])
-const Foam::scalar
-Foam::advancedSpecie::Pstd = constant::standard::Pstd.value();
+const Foam::scalar Foam::advancedSpecie::Pstd = constant::standard::Pstd.value();
 
 //- Standard temperature (default in [K])
-const Foam::scalar
-Foam::advancedSpecie::Tstd = constant::standard::Tstd.value();
+const Foam::scalar Foam::advancedSpecie::Tstd = constant::standard::Tstd.value();
 
 
 namespace Foam
 {
     defineTypeNameAndDebug(advancedSpecie, 0);
-    
+}
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-advancedSpecie::advancedSpecie(Istream& is)
+Foam::advancedSpecie::advancedSpecie(Istream& is)
 :
     name_(is),
     nMoles_(readScalar(is)),
@@ -64,7 +61,7 @@ advancedSpecie::advancedSpecie(Istream& is)
     iHat_(readScalar(is))
 {
     is.check("advancedSpecie::advancedSpecie(Istream& is)");
-
+    
     forAll(vibrationalList_, i)
     {
         is >> vibrationalList_[i];
@@ -72,34 +69,25 @@ advancedSpecie::advancedSpecie(Istream& is)
 }
 
 
-advancedSpecie::advancedSpecie(const dictionary& dict)
+Foam::advancedSpecie::advancedSpecie(const dictionary& dict)
 :
     name_(dict.dictName()),
-    nMoles_(1.0),
+    nMoles_(readScalar(dict.subDict("specie").lookup("nMoles"))),
     molWeight_(readScalar(dict.subDict("specie").lookup("molWeight"))),
     particleType_(readScalar(dict.subDict("specie").lookup("particleType"))),
-    particleCharge_
-    (
-        dict.subDict("specie").lookupOrDefault<label>("charge", 0)
-    ),
+    particleCharge_(dict.subDict("specie").lookupOrDefault<scalar>("charge", 0)),
     diameter_(readScalar(dict.subDict("specie").lookup("diameter"))),
     omega_(readScalar(dict.subDict("specie").lookup("omega"))),
     vibrationalList_(dict.subDict("thermodynamics").lookup("vibrationalList")),
-    dissociationPotential_
-    (
-        dict.subDict("specie").lookupOrDefault<scalar>("dissocEnergy", 0.0)
-    ),
-    noVibrationalTemp_(readLabel(dict.subDict("specie").lookup("noVibTemp"))),
-    noElectronicLevels_
-    (
-        dict.subDict("specie").lookupOrDefault<label>("noElecLevels", 1)
-    ),
-    iHat_(dict.subDict("specie").lookupOrDefault<scalar>("iHat", 0.0))
+    dissociationPotential_(readScalar(dict.subDict("specie").lookup("dissocEnergy"))),
+    noVibrationalTemp_(readScalar(dict.subDict("specie").lookup("noVibTemp"))),
+    noElectronicLevels_(readScalar(dict.subDict("specie").lookup("noElecLevels"))),
+    iHat_(dict.subDict("specie").lookupOrDefault<scalar>("iHat", 0))
 {}
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void advancedSpecie::write(Ostream& os) const
+void Foam::advancedSpecie::write(Ostream& os) const
 {
     dictionary dict("specie");
     dictionary dict2("thermodynamics");
@@ -121,7 +109,7 @@ void advancedSpecie::write(Ostream& os) const
 
 // * * * * * * * * * * * * * * * Ostream Operator  * * * * * * * * * * * * * //
 
-Ostream& operator<<(Ostream& os, const advancedSpecie& as)
+Foam::Ostream& Foam::operator<<(Ostream& os, const advancedSpecie& as)
 {
     os  << as.name_ << tab
         << as.nMoles_ << tab
@@ -130,12 +118,12 @@ Ostream& operator<<(Ostream& os, const advancedSpecie& as)
         << as.particleCharge_ << tab
         << as.diameter_ << tab
         << as.omega_ << tab;
-
+        
         forAll(as.vibrationalList_, i)
         {
             os << as.vibrationalList_[i] << tab;
         }
-
+        
     os  << as.dissociationPotential_ << tab
         << as.noVibrationalTemp_ << tab
         << as.noElectronicLevels_ << tab
@@ -145,9 +133,5 @@ Ostream& operator<<(Ostream& os, const advancedSpecie& as)
     return os;
 }
 
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-} // End namespace Foam
 
 // ************************************************************************* //

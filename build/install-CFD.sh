@@ -19,7 +19,7 @@ mkdir -p $sendingDir
 # copy new files --------------------------------------------------------------
 foldersSrc="thermophysicalModels TurbulenceModels hTCModels mhdModels finiteVolume fvOptions functionObjects/forces functionObjects/field-cfdStrath"
 filesInFolderSrc="functionObjects"
-foldersApp="solvers/compressible/hy2Foam utilities/mesh/generation/makeAxialMesh utilities/mesh/generation/blockMeshDG"
+foldersApp="solvers/compressible/hy2Foam solvers/compressible/hisahy2Foam utilities/mesh/generation/makeAxialMesh utilities/mesh/generation/blockMeshDG"
 
 for folder in $foldersSrc
 do

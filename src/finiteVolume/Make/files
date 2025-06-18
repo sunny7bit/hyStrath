@@ -4,4 +4,10 @@ derivedFvPatchFields = $(fvPatchFields)/derived
 $(derivedFvPatchFields)/rampInlet/rampInletFvPatchFields.C
 $(derivedFvPatchFields)/nonCatalytic/nonCatalyticFvPatchFields.C
 
+surfaceInterpolationSchemes/wVanLeer/wVanLeer.C
+surfaceInterpolationSchemes/wSuperBee/wSuperBee.C
+surfaceInterpolationSchemes/wMUSCL/wMUSCL.C
+
+reconstructionSchemes/reconstructionScheme/reconstructionSchemes.C
+
 LIB = $(FOAM_USER_LIBBIN)/libstrathFiniteVolume

@@ -1,0 +1,20 @@
+{
+    "files.associations": {
+        "*Dict": "OpenFOAM",
+        "*Properties": "OpenFOAM",
+        "fvSchemes": "OpenFOAM",
+        "fvSolution": "OpenFOAM",
+        "**/constant/g": "OpenFOAM",
+        "**/0/*": "OpenFOAM",
+        "thermoDEM": "cpp",
+        "thermoDEM_TR": "cpp",
+        "funkySetFieldsDict": "OpenFOAM",
+        "*.py": "python",
+        "lowReMag.C": "cpp",
+        "electricalConductivityModel.C": "cpp",
+        "WIP_Boltzmann.C": "cpp",
+        "noAbsorptionEmission.C": "cpp",
+        "constantAbsorptionEmission.C": "cpp",
+        "Boltzmann.C": "cpp"
+    }
+}

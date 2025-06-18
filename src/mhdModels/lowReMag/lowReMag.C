@@ -198,6 +198,7 @@ lowReMag::lowReMag(const rho2ReactionThermo& thermo)
         B_.writeOpt() = IOobject::AUTO_WRITE;
         E_.writeOpt() = IOobject::AUTO_WRITE;
         elecPot_.writeOpt() = IOobject::AUTO_WRITE;
+        j_.writeOpt() = IOobject::AUTO_WRITE;
     }
 }
 
@@ -277,6 +278,7 @@ lowReMag::lowReMag
         B_.writeOpt() = IOobject::AUTO_WRITE;
         E_.writeOpt() = IOobject::AUTO_WRITE;
         elecPot_.writeOpt() = IOobject::AUTO_WRITE;
+        j_.writeOpt() = IOobject::AUTO_WRITE;
     }
 }
 

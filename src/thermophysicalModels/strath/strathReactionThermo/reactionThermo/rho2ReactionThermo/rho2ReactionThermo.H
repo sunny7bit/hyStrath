@@ -316,8 +316,8 @@ public:
             if (Pstream::parRun())
             {
                 reduce(temperatureFieldOutOfRange, sumOp<bool>());
-                reduce(minMaxTemperatureFieldOutOfRange[0], sumOp<scalar>());
-                reduce(minMaxTemperatureFieldOutOfRange[1], sumOp<scalar>());
+                reduce(minMaxTemperatureFieldOutOfRange[0], minOp<scalar>());
+                reduce(minMaxTemperatureFieldOutOfRange[1], maxOp<scalar>());
                 reduce(noCellsWithTemperatureFieldOutOfRange, sumOp<scalar>());
             }
 

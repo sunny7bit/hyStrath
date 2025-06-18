@@ -54,7 +54,7 @@ electricalConductivityModel::electricalConductivityModel
             mesh_.time().timeName(),
             mesh_,
             IOobject::NO_READ,
-            IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
         ),
         mesh_,
         dimensionedScalar("sigma", dimensionSet(-1, -3, 3, 0, 0, 2, 0), 0.0)

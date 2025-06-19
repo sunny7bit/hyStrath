@@ -1,0 +1,65 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v1706                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      probes;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+probes
+{
+    type            probes;
+    functionObjectLibs ("libsampling.so");
+    enabled         true;
+    writeControl   timeStep;
+    writeInterval  1;
+
+    fields
+    (
+        p
+        rho
+        
+        N2
+        O2
+        NO
+        N
+        O
+        N2+
+        O2+
+        NO+
+        N+
+        O+
+        e-
+        
+        Tt
+        Tv
+        Tov
+        
+        nD_N2
+        nD_O2
+        nD_NO
+        nD_N
+        nD_O
+        nD_N2+
+        nD_O2+
+        nD_NO+
+        nD_N+
+        nD_O+
+        nD_e-
+    );
+
+    probeLocations
+    (
+        (5e-6 5e-6 5e-6)
+    );
+
+}

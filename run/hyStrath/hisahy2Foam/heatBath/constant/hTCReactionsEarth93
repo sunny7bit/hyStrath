@@ -1,0 +1,53 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v1706                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      hTCReactionsEarth93;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+species
+(
+    N2
+    //O2
+    //NO
+    //N2+
+    //O2+
+    //NO+
+    N
+    //O
+    //N+
+    //O+
+    //e-
+);
+
+/*vibTempAssociativity (0 1);*/
+
+// Units
+// A: m^3 kmol^-1 s^-1
+// Ta: K
+
+reactions
+{
+    nitrogenReaction
+    {
+        type     irreversibleArrheniusReaction;
+        reaction "N2 + N2 = 2N + N2";
+        controlT dissociation;
+        A        7.0e18;
+        beta     -1.6;
+        Ta       113200;
+    }
+}
+
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

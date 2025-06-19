@@ -83,6 +83,10 @@ cd $sendingDir/applications/solvers/compressible/hy2Foam/
 ./Allwclean
 ./Allwmake -j$nProcs
 
+cd $sendingDir/applications/solvers/compressible/hisahy2Foam/
+./Allwclean
+./Allwmake -j$nProcs
+
 #---- utilities ----
 cd $sendingDir/applications/utilities/mesh/generation/makeAxialMesh
 wclean

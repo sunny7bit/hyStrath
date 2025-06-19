@@ -51,7 +51,7 @@ maxCo           0.2;
 
 maxDeltaT       1.0e-5;
 
-libs ("libstrathFiniteVolume.so");
+// libs ("libstrathFiniteVolume.so");
 
 functions
 {

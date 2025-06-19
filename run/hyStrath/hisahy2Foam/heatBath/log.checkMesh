@@ -9,9 +9,9 @@ Build  : v1706
 Arch   : "LSB;label=32;scalar=64"
 Exec   : checkMesh
 Date   : Jun 19 2025
-Time   : 11:13:00
+Time   : 11:17:06
 Host   : "DESKTOP-KSMEKOA"
-PID    : 19424
+PID    : 20408
 Case   : /home/sun/OpenFOAM/sun-v1706/hyStrath/run/hyStrath/hisahy2Foam/heatBath
 nProcs : 1
 sigFpe : Enabling floating point exception trapping (FOAM_SIGFPE).
